@@ -237,6 +237,28 @@
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        /* ===== 移动端适配 (<768px) ===== */
+        @media (max-width: 768px) {
+            body { height: auto; min-height: 100dvh; overflow-y: auto; }
+            header { padding: 10px 16px; }
+            h1 { font-size: 1rem; white-space: normal; flex-wrap: wrap; }
+            header > div { display: none; } /* 隐藏副标题 */
+
+            .main-container { flex-direction: column; padding: 12px; gap: 12px; }
+
+            .preview-area {
+                flex: none;
+                height: 45vh;
+                min-height: 220px;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding-right: 0;
+                overflow-y: visible;
+            }
+        }
     </style>
 </head>
 <body>

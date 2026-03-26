@@ -185,6 +185,49 @@
     body.is-light .right-nav { border-color: rgba(0,0,0,0.1); }
     body.is-light .color-item::before { background: #000; }
     body.is-light .color-item.active { background: rgba(0,0,0,0.05); }
+
+    /* ===== 移动端适配 (<768px) ===== */
+    @media (max-width: 768px) {
+      body { overflow-y: auto; min-height: 100dvh; }
+
+      /* 顶部操作栏往下移 */
+      .top-bar { top: 12px; left: 12px; gap: 10px; }
+      .top-btn { font-size: 0.75rem; padding: 6px 12px; }
+
+      /* 中央数据区改为绝对定位相对，手机友好排布 */
+      .center-data {
+        position: relative;
+        top: auto; left: auto;
+        transform: none;
+        padding: 60px 20px 200px; /* 顶部留顶栏空间，底部留色彩列表 */
+        gap: 20px;
+      }
+
+      /* 缩小汉字大字 */
+      .color-kanji { font-size: 4.5rem; }
+      .color-romaji { font-size: 1.5rem; letter-spacing: 4px; }
+
+      /* 右侧列表变底部横向滚动 */
+      .right-nav {
+        position: fixed;
+        bottom: 0; right: 0; left: 0; top: auto;
+        width: 100%;
+        height: auto;
+        max-height: 160px;
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.15);
+        padding: 8px 0;
+        mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+        background: rgba(0,0,0,0.3);
+        backdrop-filter: blur(12px);
+      }
+
+      .color-list { flex-direction: row; overflow-x: auto; gap: 4px; padding: 0 12px; }
+      .color-item { flex-shrink: 0; padding: 6px 12px; font-size: 0.75rem; letter-spacing: 1px; }
+      .color-item::before { top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 3px; transform: scaleX(0); }
+      .color-item.active::before { transform: scaleX(1); }
+    }
   </style>
 </head>
 <body>

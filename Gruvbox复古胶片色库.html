@@ -60,6 +60,15 @@
 
     #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #fabd2f; color: #282828; padding: 12px 30px; border-radius: 30px; font-weight: 800; box-shadow: 0 10px 25px rgba(250, 189, 47, 0.4); transition: 0.4s; opacity: 0; pointer-events: none; z-index: 1000; }
     #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ===== 移动端适配 ===== */
+    @media (max-width: 768px) {
+      body { flex-direction: column; height: auto; }
+      .sidebar { width: 100%; height: auto; box-shadow: none; border-right: none; border-bottom: 1px solid var(--bg2); padding: 16px; }
+      .project-title { font-size: 1.2rem; white-space: normal; }
+      .main-content { height: auto; overflow-y: visible; padding: 16px; }
+      .combo-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>

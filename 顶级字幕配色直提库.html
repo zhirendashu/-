@@ -232,6 +232,14 @@
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
+
+    /* ===== 移动端适配 (<768px) ===== */
+    @media (max-width: 768px) {
+      body { padding: 20px 16px; }
+      .header h1 { font-size: 1.4rem; white-space: normal; letter-spacing: 0; }
+      .grid { grid-template-columns: 1fr; gap: 16px; }
+      .demo-text { font-size: 2rem; }
+    }
   </style>
 </head>
 <body>

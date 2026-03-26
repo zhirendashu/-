@@ -475,6 +475,36 @@
         color: #3a4358;
         padding-bottom: 24px;
       }
+
+      /* ===== 移动端适配 (<768px) ===== */
+      @media (max-width: 768px) {
+        body { height: auto; overflow-y: auto; }
+        header h1 { white-space: normal; font-size: 1.1rem; }
+        header p { display: none; } /* 隐藏副标题防止溢出 */
+
+        /* 主容器变竖向堆叠 */
+        .main-container {
+          flex-direction: column;
+          height: auto;
+          padding: 12px;
+          gap: 16px;
+        }
+
+        /* 预览区固定高度，防止 Canvas 被压缩到 0 */
+        .left-col {
+          height: 40vh;
+          min-height: 200px;
+          flex-shrink: 0;
+        }
+
+        /* 右侧面板变全宽 */
+        .right-col {
+          width: 100%;
+          height: auto;
+          overflow-y: visible;
+          padding-right: 0;
+        }
+      }
     </style>
   </head>
   <body>
