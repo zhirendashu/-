@@ -352,17 +352,26 @@
         .footer-links a:hover { color: var(--accent-primary); }
         .copyright { font-size: 0.78rem; color: #475569; }
 
-        /* ===== 响应式：小屏改为单列 ===== */
-        @media (max-width: 900px) {
+        /* ===== 响应式：小屏适配 ===== */
+        @media (max-width: 1024px) {
+            /* 平板：工具卡片根1列，色彩卡片根2列 */
+            .tool-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            /* 手机：全部单列 */
             .tool-grid { grid-template-columns: 1fr; }
             .wf-bar { max-width: 100%; border-radius: 16px; grid-template-columns: 1fr; padding: var(--sp-1); }
             .wf-arrow { transform: rotate(90deg); padding: 4px 0; }
             .wf-step { justify-content: flex-start; padding: 12px var(--sp-2); }
             .hero-pills { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 640px) {
             .app { padding: var(--sp-5) var(--sp-2); gap: var(--sp-5); }
             .glass-card { padding: var(--sp-3); }
+            h1 { font-size: clamp(1.4rem, 5vw, 2.2rem); white-space: normal; }
+            .card-footer { flex-wrap: wrap; gap: var(--sp-1); }
+        }
+        /* GSAP 未加载时的保陽显示：如果 js 不执行，卡片直接可见 */
+        @media (prefers-reduced-motion: reduce) {
+            .glass-card { opacity: 1 !important; transform: none !important; }
         }
     </style>
 </head>
@@ -671,22 +680,42 @@
             <script>
                 const __AUTH_SIGNATURE = "179689535&0814";
                 
-                // GSAP 入场动画
+                // GSAP 入场动画，带安全保陽：如果 GSAP 未加载则直接显示所有内容
+                function showAllFallback() {
+                    document.querySelectorAll('.glass-card').forEach(el => {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateY(0)';
+                    });
+                    document.querySelectorAll('#hero-header > *').forEach(el => {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateY(0)';
+                    });
+                }
+
                 window.addEventListener('DOMContentLoaded', () => {
-                    const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-                    
-                    tl.from("#hero-header > *", {
-                        y: 30,
-                        opacity: 0,
-                        duration: 1,
-                        stagger: 0.1
-                    })
-                    .to(".glass-card", {
-                        y: 0,
-                        opacity: 1,
-                        duration: 0.8,
-                        stagger: 0.05
-                    }, "-=0.6");
+                    // 若 GSAP 未加载（移动端网绍差、CDN 超时），直接显示
+                    if (typeof gsap === 'undefined') { showAllFallback(); return; }
+
+                    try {
+                        const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+                        tl.from("#hero-header > *", {
+                            y: 30, opacity: 0, duration: 1, stagger: 0.1
+                        })
+                        .to(".glass-card", {
+                            y: 0, opacity: 1, duration: 0.8, stagger: 0.05
+                        }, "-=0.6");
+                    } catch(e) {
+                        // 动画异常就展开 fallback
+                        showAllFallback();
+                    }
+
+                    // 保陽计时器：1.5s 后如果卡片还是不可见，强制显示
+                    setTimeout(() => {
+                        const firstCard = document.querySelector('.glass-card');
+                        if (firstCard && parseFloat(getComputedStyle(firstCard).opacity) < 0.5) {
+                            showAllFallback();
+                        }
+                    }, 1500);
                 });
             </script>
         </footer>
