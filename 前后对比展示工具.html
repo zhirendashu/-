@@ -309,7 +309,54 @@
 
         /* 隐藏输入框 */
         input[type="file"] { display: none; }
-    </style>
+
+        /* ===== 移动端适配 (<768px) ===== */
+        @media (max-width: 768px) {
+            body {
+                height: auto;
+                overflow: auto; /* 允许整页滚动 */
+                min-height: 100dvh;
+            }
+            header {
+                height: 52px;
+                padding: 0 16px;
+            }
+            .logo { font-size: 1rem; }
+
+            main {
+                flex-direction: column; /* 预览在上、控制面板在下 */
+                overflow: visible;
+                height: auto;
+            }
+
+            /* 预览区：固定高度避免 Canvas 0px 问题 */
+            .preview-pane {
+                flex: none;
+                height: 45vh;
+                min-height: 240px;
+                padding: 12px;
+            }
+
+            /* 侧边栏：变为底部面板，全宽 */
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-glass);
+                padding: 16px;
+                gap: 16px;
+                max-height: none; /* 不限高，允许下方滚动 */
+            }
+
+            /* 卡片内间距收紧 */
+            .panel-card { padding: 14px; gap: 12px; }
+
+            /* 视频控制条，让它不覆盖 Canvas */
+            .video-controls { bottom: 8px; }
+
+            /* 导出按钮行内排布 */
+            #record-btn { margin-top: 8px; }
+        }
+        </style>
 </head>
 <body>
     <div id="loading">
