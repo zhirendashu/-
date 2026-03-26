@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前后对比展示工具 | 植人大树</title>
+    <!--
+    作者：植人大树
+    个人主页：https://link3.cc/zhirendashu
+    版本：v1.0.0
+    发布日期：2026-03-26
+    开源协议：CC BY-NC-SA 4.0
+    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a;
+            --surface-glass: rgba(22, 26, 36, 0.72);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --accent: #6366f1;
+            --accent-gradient: linear-gradient(135deg, #6366f1, #a855f7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --radius: 16px;
+            --font-display: 'Outfit', 'Noto Sans SC', sans-serif;
+            --sp-1: 8px;
+            --sp-2: 16px;
+            --sp-3: 24px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg);
+            color: var(--text-main);
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            height: 64px;
+            padding: 0 32px;
+            background: rgba(10, 12, 16, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .logo-group { display: flex; align-items: center; gap: 16px; }
+        .back-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.25s;
+        }
+        .back-link:hover { color: var(--text-main); }
+        .logo { 
+            font-weight: 800; 
+            font-size: 1.25rem; 
+            letter-spacing: -0.05em;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 预览区 */
+        .preview-pane {
+            flex: 1;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 40px;
+        }
+
+        .canvas-container {
+            position: relative;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+            background: #111;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* 交互分割线 */
+        .split-handle {
+            position: absolute;
+            background: white;
+            z-index: 10;
+            cursor: move;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: background 0.2s;
+        }
+        .split-handle::after {
+            content: "";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px; height: 32px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 4px solid var(--accent);
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 360px;
+            background: var(--surface-glass);
+            border-left: 1px solid var(--border-glass);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 24px;
+            overflow-y: auto;
+            backdrop-filter: blur(24px);
+        }
+
+        .panel-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .panel-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .upload-slot {
+            aspect-ratio: 1;
+            background: rgba(0,0,0,0.2);
+            border: 1px dashed var(--border-glass);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .upload-slot:hover { border-color: var(--accent); background: rgba(99, 102, 241, 0.05); }
+        .upload-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+        .upload-slot.has-img img { opacity: 1; }
+        .upload-slot.has-img span, .upload-slot.has-img svg { opacity: 0; }
+        .upload-slot span { font-size: 0.75rem; color: var(--text-dim); }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .control-label { font-size: 0.85rem; color: var(--text-dim); }
+
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .radio-btn {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-glass);
+            color: var(--text-dim);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .radio-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn:active { transform: scale(0.98); }
+
+        .toggle {
+            position: relative;
+            width: 44px; height: 24px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-knob {
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 20px; height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle.active { background: var(--accent); }
+        .toggle.active .toggle-knob { transform: translateX(20px); }
+
+        /* 视频控制组件 */
+        .video-controls {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+            padding: 8px 16px; border-radius: 30px; display: none; align-items: center; gap: 12px;
+            border: 1px solid var(--border-glass); z-index: 20;
+        }
+        .progress-bar { width: 120px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; cursor: pointer; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--accent); border-radius: 2px; width: 0%; }
+
+        .rec-indicator {
+            position: absolute; top: 20px; right: 20px; background: rgba(255,0,0,0.2);
+            color: #ff4444; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem;
+            display: none; align-items: center; gap: 6px; border: 1px solid rgba(255,0,0,0.3);
+            font-weight: 800; animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        
+        .mode-switch {
+            display: flex; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 4px; gap: 4px; margin-bottom: 12px;
+        }
+        .mode-tab { 
+            flex: 1; text-align: center; font-size: 0.75rem; padding: 6px; border-radius: 4px; cursor: pointer; color: var(--text-dim);
+            transition: all 0.2s;
+        }
+        .mode-tab.active { background: var(--accent); color: white; }
+
+        #loading {
+            position: fixed; inset: 0;
+            background: rgba(5,7,10,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 隐藏输入框 */
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <div style="font-size: 0.9rem; color: var(--text-dim);">正在渲染渲染高清画面...</div>
+    </div>
+
+    <header>
+        <div class="logo-group">
+            <a href="index.html" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                门户
+            </a>
+            <h1 class="logo">前后对比展示工具</h1>
+        </div>
+        <div style="color: var(--text-dim); font-size: 0.8rem;">4K 支持 · 三向切割 · 视觉增强</div>
+    </header>
+
+    <main>
+        <div class="preview-pane" id="drop-area">
+            <div class="rec-indicator" id="rec-ui">● REC RECORDING</div>
+            <div class="canvas-container" id="cvs-wrap">
+                <canvas id="main-cvs"></canvas>
+            </div>
+            
+            <div class="video-controls" id="v-ctrl">
+                <button class="btn-ghost" id="play-pause" style="padding: 4px; border: none; color: white; background: transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                <div class="progress-bar" id="v-progress"><div class="progress-fill" id="v-fill"></div></div>
+                <span style="font-size: 0.7rem; color: var(--text-dim); min-width: 40px;" id="v-time">00:00</span>
+            </div>
+            
+            <div id="empty-tip" style="position: absolute; color: var(--text-dim); pointer-events: none; text-align: center;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.3;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <div style="font-weight: 600;">载入影像开始对比</div>
+                <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 4px;">拖拽两张图片至此处</div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel-card">
+                <div class="panel-title">工作模式</div>
+                <div class="mode-switch">
+                    <div class="mode-tab active" data-type="image">图片对比</div>
+                    <div class="mode-tab" data-type="video">视频对比</div>
+                </div>
+                <div class="panel-title">影像载入</div>
+                <div class="upload-grid" id="uploader-img">
+                    <div class="upload-slot" id="slot-before" title="上传修改前原图">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+                        <span>原图 (Before)</span>
+                        <img id="preview-before">
+                        <input type="file" id="input-before" accept="image/*">
+                    </div>
+                    <div class="upload-slot" id="slot-after" title="上传修改后精修图">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+                        <span>精修 (After)</span>
+                        <img id="preview-after">
+                        <input type="file" id="input-after" accept="image/*">
+                    </div>
+                </div>
+                <div class="upload-grid" id="uploader-video" style="display: none;">
+                    <div class="upload-slot" id="slot-v-before" title="上传原视频">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 10l5-5v14l-5-5H5V10h10z"/></svg>
+                        <span style="font-size: 0.65rem;">原片 (V-Before)</span>
+                        <video id="v-source-before" loop muted style="display:none;"></video>
+                        <input type="file" id="input-v-before" accept="video/*">
+                    </div>
+                    <div class="upload-slot" id="slot-v-after" title="上传精修视频">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 10l5-5v14l-5-5H5V10h10z"/></svg>
+                        <span style="font-size: 0.65rem;">精修 (V-After)</span>
+                        <video id="v-source-after" loop muted style="display:none;"></video>
+                        <input type="file" id="input-v-after" accept="video/*">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">画布比例</div>
+                <div class="radio-group" id="ratio-group">
+                    <div class="radio-btn active" data-ratio="0.75">3:4 小红书</div>
+                    <div class="radio-btn" data-ratio="1">1:1 正方形</div>
+                    <div class="radio-btn" data-ratio="0.5625">9:16 全屏</div>
+                    <div class="radio-btn" data-ratio="1.777">16:9 横屏</div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">对比模式</div>
+                <div class="radio-group" id="mode-group">
+                    <div class="radio-btn active" data-mode="V">左右竖切</div>
+                    <div class="radio-btn" data-mode="H">上下横切</div>
+                    <div class="radio-btn" data-mode="D">斜角对角</div>
+                    <div class="radio-btn" data-mode="B">百叶窗</div>
+                    <div class="radio-btn" data-mode="F">渐变混合</div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">增强选项</div>
+                <div class="control-row">
+                    <span class="control-label">对比标识水印</span>
+                    <div class="toggle active" id="toggle-watermark">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">水印语言</span>
+                    <select id="watermark-lang" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-glass); color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem;">
+                        <option value="en">ENGLISH</option>
+                        <option value="zh">中文标识</option>
+                    </select>
+                </div>
+                <div style="border-top: 1px solid var(--border-glass); padding-top: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
+                    <div class="control-row">
+                        <span class="control-label">分割线样式</span>
+                        <select id="line-style" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-glass); color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem;">
+                            <option value="white">简约白线</option>
+                            <option value="pattern">自定义图案</option>
+                        </select>
+                    </div>
+                    <div class="control-row" id="width-ctrl">
+                        <span class="control-label">线框宽度 (<span id="width-val">2</span>px)</span>
+                        <input type="range" id="input-line-width" min="0" max="15" step="0.5" value="2" style="flex: 1; margin-left: 12px; accent-color: var(--accent);">
+                    </div>
+                    <button class="btn btn-ghost" id="upload-line-btn" style="font-size: 0.75rem; padding: 8px; border: 1px dashed var(--border-glass); display: none;">上传自定义线框图</button>
+                    <input type="file" id="input-line-pattern" accept="image/*">
+                    <button class="btn" id="scan-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-main); font-size: 0.8rem; padding: 8px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        一键扫描演示
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel-card" id="export-params" style="display: none; padding: 16px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2);">
+                <div class="panel-title" style="color: var(--accent); font-size: 0.75rem; margin-bottom: 8px;">🎞️ 演示视频导出参数</div>
+                <div class="control-row">
+                    <span class="control-label">视频效果</span>
+                    <select id="v-effect" style="flex:1; margin-left:8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: white; border-radius: 4px; padding: 3px 6px; font-size: 0.75rem;">
+                        <option value="slide">滑动对比</option>
+                        <option value="fade">渐变过渡</option>
+                        <option value="blinds">百叶窗</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">视频格式</span>
+                    <select id="v-format" style="flex:1; margin-left:8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: white; border-radius: 4px; padding: 3px 6px; font-size: 0.75rem;">
+                        <option value="1080p">1080P (1920×1080)</option>
+                        <option value="1080p_v">1080P 竖屏 (1080×1920)</option>
+                        <option value="720p">720P (1280×720)</option>
+                        <option value="2k">2K (2560×1440)</option>
+                        <option value="4k">4K (3840×2160)</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">帧率 (FPS)</span>
+                    <input type="number" id="v-fps" value="30" min="1" max="60" style="width: 55px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: white; border-radius: 4px; padding: 3px 6px; text-align: center;">
+                </div>
+                <div class="control-row">
+                    <span class="control-label">演示时长 (秒)</span>
+                    <input type="number" id="v-duration" value="5" min="1" max="60" style="width: 55px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: white; border-radius: 4px; padding: 3px 6px; text-align: center;">
+                </div>
+            </div>
+
+            <button class="btn" id="export-btn" style="margin-top: auto;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出静态对比图 (JPG)
+            </button>
+            <button class="btn" id="record-btn" style="margin-top: 12px; background: rgba(255,100,100,0.1); border: 1px solid rgba(255,0,0,0.2); color: #ff5555;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                生成全自动演示视频
+            </button>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * 作者：植人大树
+         * 个人主页：https://link3.cc/zhirendashu
+         * 版本：v1.2.0 (Video Pro Max Edition)
+         * 发布日期：2026-03-26
+         * 开源协议：CC BY-NC-SA 4.0
+         * 禁止未经授权的商业化使用
+         */
+        
+        const cvs = document.getElementById('main-cvs');
+        const ctx = cvs.getContext('2d');
+        const cvsWrap = document.getElementById('cvs-wrap');
+        const vBefore = document.getElementById('v-source-before');
+        const vAfter = document.getElementById('v-source-after');
+        
+        let state = {
+            workType: 'image', // image | video
+            imgBefore: null, imgAfter: null, imgLinePattern: null,
+            ratio: 0.75, mode: 'V', splitPos: 0.5,
+            showWatermark: true, lang: 'en', lineStyle: 'white', lineWidth: 2,
+            isRecording: false, isPlaying: false
+        };
+
+        let recorder = null, recordedChunks = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            gsap.to(".panel-card", { x: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out" });
+            initSplitHandle();
+            initListeners();
+            resizeCanvas();
+            requestAnimationFrame(renderLoop);
+        });
+
+        function initSplitHandle() {
+            const handle = document.createElement('div'); handle.className = 'split-handle'; handle.id = 'handle';
+            cvsWrap.appendChild(handle);
+            let drags = false;
+            const start = () => drags = true; const end = () => drags = false;
+            handle.onmousedown = start; handle.ontouchstart = start;
+            window.onmouseup = end; window.ontouchend = end;
+            window.onmousemove = (e) => {
+                if(!drags) return;
+                const rect = cvsWrap.getBoundingClientRect();
+                const x = e.clientX || (e.touches && e.touches[0].clientX);
+                const y = e.clientY || (e.touches && e.touches[0].clientY);
+                if(state.mode === 'H') state.splitPos = Math.max(0, Math.min(1, (y - rect.top) / rect.height));
+                else state.splitPos = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+            };
+            window.ontouchmove = (e) => { if(drags) window.onmousemove(e.touches[0]); };
+        }
+
+        function initListeners() {
+            // 模式/比例切换
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.onclick = () => {
+                document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active'); state.workType = tab.dataset.type;
+                document.getElementById('uploader-img').style.display = state.workType === 'image' ? 'grid' : 'none';
+                document.getElementById('uploader-video').style.display = state.workType === 'video' ? 'grid' : 'none';
+                document.getElementById('v-ctrl').style.display = state.workType === 'video' ? 'flex' : 'none';
+                document.getElementById('export-params').style.display = state.workType === 'video' ? 'block' : 'none';
+                resizeCanvas();
+            });
+
+            document.querySelectorAll('#ratio-group .radio-btn').forEach(btn => btn.onclick = () => {
+                document.querySelectorAll('#ratio-group .radio-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); state.ratio = parseFloat(btn.dataset.ratio); resizeCanvas();
+            });
+
+            document.querySelectorAll('#mode-group .radio-btn').forEach(btn => btn.onclick = () => {
+                document.querySelectorAll('#mode-group .radio-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); state.mode = btn.dataset.mode;
+            });
+
+            // 载入逻辑
+            ['before', 'after'].forEach(id => {
+                const sImg = document.getElementById('slot-'+id), sVid = document.getElementById('slot-v-'+id);
+                sImg.onclick = () => document.getElementById('input-'+id).click();
+                document.getElementById('input-'+id).onchange = (e) => {
+                    const f = e.target.files[0]; if(!f) return;
+                    const img = new Image(); img.onload = () => { 
+                        state[id==='before'?'imgBefore':'imgAfter']=img; document.getElementById('preview-'+id).src=img.src;
+                        sImg.classList.add('has-img'); document.getElementById('empty-tip').style.display = 'none';
+                    }; img.src = URL.createObjectURL(f);
+                };
+                sVid.onclick = () => document.getElementById('input-v-'+id).click();
+                document.getElementById('input-v-'+id).onchange = (e) => {
+                    const f = e.target.files[0]; if(!f) return;
+                    const v = id==='before'?vBefore:vAfter; v.src = URL.createObjectURL(f);
+                    v.onloadedmetadata = () => { sVid.classList.add('has-img'); document.getElementById('empty-tip').style.display = 'none'; };
+                };
+            });
+
+            // 视频同步与播放
+            const playBtn = document.getElementById('play-pause');
+            playBtn.onclick = () => {
+                state.isPlaying = !state.isPlaying;
+                playBtn.innerHTML = state.isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+                if(state.isPlaying) { vBefore.play(); vAfter.play(); } else { vBefore.pause(); vAfter.pause(); }
+            };
+            vBefore.ontimeupdate = () => {
+                if(Math.abs(vBefore.currentTime - vAfter.currentTime) > 0.15) vAfter.currentTime = vBefore.currentTime;
+                const p = (vBefore.currentTime / vBefore.duration)*100 || 0;
+                document.getElementById('v-fill').style.width = p+'%';
+                const m=Math.floor(vBefore.currentTime/60), s=Math.floor(vBefore.currentTime%60);
+                document.getElementById('v-time').innerText = `${m}:${s.toString().padStart(2,'0')}`;
+            };
+
+            // 功能开关与导出
+            document.getElementById('input-line-width').oninput = function() {
+                state.lineWidth = parseFloat(this.value);
+                document.getElementById('width-val').innerText = state.lineWidth;
+            };
+
+            document.getElementById('toggle-watermark').onclick = function(){ this.classList.toggle('active'); state.showWatermark = this.classList.contains('active'); };
+            document.getElementById('watermark-lang').onchange = (e) => state.lang = e.target.value;
+            document.getElementById('line-style').onchange = (e) => { 
+                state.lineStyle = e.target.value; 
+                document.getElementById('upload-line-btn').style.display = state.lineStyle==='pattern'?'block':'none';
+                document.getElementById('width-ctrl').style.display = state.lineStyle==='pattern'?'none':'flex';
+            };
+            document.getElementById('upload-line-btn').onclick = () => document.getElementById('input-line-pattern').click();
+            document.getElementById('input-line-pattern').onchange = (e) => { const img = new Image(); img.onload = () => state.imgLinePattern = img; img.src = URL.createObjectURL(e.target.files[0]); };
+            document.getElementById('scan-btn').onclick = () => {
+                const dur = parseFloat(document.getElementById('v-duration')?.value) || 3;
+                gsap.fromTo(state, {splitPos: 0}, {splitPos: 1, duration: dur, ease: "power1.inOut"});
+            };
+            
+            document.getElementById('export-btn').onclick = () => { const a = document.createElement('a'); a.download = `Comparison-${Date.now()}.jpg`; a.href = cvs.toDataURL('image/jpeg', 0.95); a.click(); };
+            document.getElementById('record-btn').onclick = function() {
+                if(!state.isRecording) { generateAutoVideo(); }
+                else { state.isRecording = false; }
+            };
+        }
+
+        async function generateAutoVideo() {
+            const fps = parseInt(document.getElementById('v-fps').value) || 30;
+            const duration = parseInt(document.getElementById('v-duration').value) || 5;
+            const effect = document.getElementById('v-effect')?.value || 'slide';
+            const format = document.getElementById('v-format')?.value || '1080p';
+            const totalFrames = fps * duration;
+
+            // 根据格式设置画布分辨率
+            const resMap = {
+                '1080p': [1920, 1080], '1080p_v': [1080, 1920],
+                '720p': [1280, 720], '2k': [2560, 1440], '4k': [3840, 2160]
+            };
+            const [rW, rH] = resMap[format] || [1920, 1080];
+            const prevW = cvs.width, prevH = cvs.height;
+            cvs.width = rW; cvs.height = rH;
+            
+            state.isRecording = true;
+            document.getElementById('loading').style.display = 'flex';
+            document.querySelector('#loading div:last-child').innerText = `正在生成 ${format.toUpperCase()} 演示视频... 0/${totalFrames}帧`;
+            document.getElementById('rec-ui').style.display = 'flex';
+            document.getElementById('rec-ui').innerText = `● 正在合成 ${totalFrames} 帧...`;
+            
+            const stream = cvs.captureStream(fps);
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 12000000 });
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `Comparison-${format}-${Date.now()}.webm`; a.click();
+                // 还原画布尺寸
+                cvs.width = prevW; cvs.height = prevH;
+                resizeCanvas();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('rec-ui').style.display = 'none';
+                state.isRecording = false;
+            };
+
+            mediaRecorder.start();
+
+            const originalSplitPos = state.splitPos;
+            const originalMode = state.mode;
+
+            // 单次扫描：0 → 1（只走一遍，不反复）
+            for (let i = 0; i <= totalFrames; i++) {
+                if (!state.isRecording) break;
+                const progress = i / totalFrames; // [0, 1]
+
+                if (effect === 'slide') {
+                    // 滑动对比：分割线从左到右扫描一遍
+                    state.splitPos = progress;
+                } else if (effect === 'fade') {
+                    // 渐变过渡：Before 渐渐消失，After 渐渐出现
+                    state.splitPos = progress;
+                    state.mode = 'F';
+                } else if (effect === 'blinds') {
+                    // 百叶窗：从 0 扩展到 1
+                    state.splitPos = progress;
+                    state.mode = 'B';
+                }
+
+                // 更新进度提示
+                if (i % fps === 0) {
+                    document.querySelector('#loading div:last-child').innerText = `正在合成第 ${i}/${totalFrames} 帧...`;
+                }
+
+                render();
+                await new Promise(r => setTimeout(r, 1000 / fps));
+            }
+
+            mediaRecorder.stop();
+            // 恢复原始状态
+            state.splitPos = originalSplitPos;
+            state.mode = originalMode;
+        }
+
+        function resizeCanvas() {
+            const w = document.querySelector('.preview-pane').getBoundingClientRect(); const pad = 60;
+            let tw = w.width - pad, th = tw / state.ratio; if (th > w.height - pad) { th = w.height - pad; tw = th * state.ratio; }
+            cvs.width = 1920; cvs.height = 1920 / state.ratio; cvsWrap.style.width = tw + 'px'; cvsWrap.style.height = th + 'px';
+        }
+
+        function renderLoop() { render(); requestAnimationFrame(renderLoop); }
+
+        function render() {
+            const W = cvs.width, H = cvs.height, handle = document.getElementById('handle');
+            ctx.fillStyle = '#05070a'; ctx.fillRect(0,0,W,H);
+            let sB = state.workType === 'image' ? state.imgBefore : vBefore, sA = state.workType === 'image' ? state.imgAfter : vAfter;
+            if (state.workType === 'video' && (vBefore.readyState < 2 || vAfter.readyState < 2)) return;
+            if (!sB || !sA) { handle.style.opacity = '0'; return; }
+            handle.style.opacity = '1';
+
+            const cover = (src) => {
+                const sw = src.videoWidth || src.width, sh = src.videoHeight || src.height, sr = sw / sh, cr = W / H;
+                let dw, dh, dx, dy; if (sr > cr) { dh = H; dw = H * sr; dx = (W - dw) / 2; dy = 0; } else { dw = W; dh = W / sr; dx = 0; dy = (H - dh) / 2; }
+                ctx.drawImage(src, dx, dy, dw, dh);
+            };
+
+            cover(sB); ctx.save();
+            if (state.mode === 'V') {
+                const x = W * state.splitPos; ctx.beginPath(); ctx.rect(x, 0, W-x, H); ctx.clip();
+                updateH(x/W*100, 0, '2px', '100%', 0);
+            } else if (state.mode === 'H') {
+                const y = H * state.splitPos; ctx.beginPath(); ctx.rect(0, y, W, H-y); ctx.clip();
+                updateH(0, y/H*100, '100%', '2px', 0);
+            } else if (state.mode === 'D') {
+                const off = state.splitPos * (W + H); ctx.beginPath(); ctx.moveTo(off, 0); ctx.lineTo(W, 0); ctx.lineTo(W, H); ctx.lineTo(off-H, H); ctx.closePath(); ctx.clip();
+                updateH(state.splitPos*100, 50, '4px', '140%', 45);
+            } else if (state.mode === 'B') {
+                const strips = 12, sh = H / strips; ctx.beginPath(); for(let i=0; i<strips; i++) ctx.rect(0, i*sh, W * state.splitPos, sh * 0.85); ctx.clip(); handle.style.opacity = '0';
+            } else if (state.mode === 'F') { ctx.globalAlpha = state.splitPos; handle.style.opacity = '0'; }
+            cover(sA); ctx.restore();
+
+            if (['V','H','D'].includes(state.mode)) {
+                ctx.save(); ctx.lineWidth = state.lineWidth * (cvs.width / cvsWrap.clientWidth); 
+                ctx.strokeStyle = (state.lineStyle === 'pattern' && state.imgLinePattern) ? ctx.createPattern(state.imgLinePattern, 'repeat') : 'rgba(255,255,255,0.8)';
+                ctx.beginPath();
+                if (state.mode === 'V') { ctx.moveTo(W*state.splitPos, 0); ctx.lineTo(W*state.splitPos, H); }
+                else if (state.mode === 'H') { ctx.moveTo(0, H*state.splitPos); ctx.lineTo(W, H*state.splitPos); }
+                else if (state.mode === 'D') { 
+                    const off = state.splitPos*(W+H); 
+                    ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.moveTo(off,0); ctx.lineTo(off-H, H); 
+                }
+                ctx.stroke(); ctx.restore();
+            }
+            if (state.showWatermark) {
+                ctx.save();
+                ctx.font = `800 ${W * 0.025}px 'Outfit'`;
+                ctx.textBaseline = 'middle';
+                const bTxt = state.lang === 'en' ? 'BEFORE' : '原片';
+                const aTxt = state.lang === 'en' ? 'AFTER' : '精修';
+                const pad = W * 0.03;
+                
+                // Before 标识
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10;
+                ctx.fillText(bTxt, pad, pad + 20);
+
+                // After 标识
+                ctx.textAlign = 'right';
+                ctx.fillText(aTxt, W - pad, H - pad - 20);
+                ctx.restore();
+            }
+        }
+
+        function updateH(l, t, w, h, r) {
+            const el = document.getElementById('handle');
+            if(!el) return;
+            el.style.left = l+'%'; el.style.top = t+(t===50?'':'%'); 
+            el.style.width = w; el.style.height = h;
+            el.style.transform = r ? `translate(-50%, -50%) rotate(${r}deg)` : 'none';
+        }
+
+        window.onresize = resizeCanvas;
+        resizeCanvas();
+        
+        const __AUTH_SIGNATURE = "179689535&0814";
+    </script>
+</body>
+</html>

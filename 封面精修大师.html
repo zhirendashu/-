@@ -1,0 +1,1343 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>封面精修大师 · 植人大树自媒体系列</title>
+    <!-- 常用库：Fabric.js 强大的 Canvas 图层引擎 -->
+    <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- 引入强大的开源裁剪引擎 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0b0d12;
+        --panel: #161922;
+        --accent: #ff2442;
+        --text: #ffffff;
+        --sub: #828a9f;
+        --border: #2a2e3a;
+        --radius: 12px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        height: 100dvh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 头部 */
+      header {
+        height: 60px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 24px; z-index: 10;
+      }
+      .logo { 
+        font-weight: 800; 
+        font-size: 1.2rem; 
+        letter-spacing: -0.05em;
+        background: linear-gradient(90deg, #ff2442, #ff7e5f); 
+        -webkit-background-clip: text; 
+        background-clip: text; 
+        -webkit-text-fill-color: transparent; 
+        white-space: nowrap; 
+        word-break: keep-all; 
+      }
+      
+      /* 主布局 */
+      main {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+      }
+
+      /* 工具栏 */
+      .toolbar {
+        width: 80px;
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 24px;
+      }
+      .tool-btn {
+        width: 48px; height: 48px; border-radius: 12px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: var(--sub); cursor: pointer; transition: 0.2s; gap: 4px;
+      }
+      .tool-btn svg { width: 20px; height: 20px; }
+      .tool-btn span { font-size: 0.65rem; }
+      .tool-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+      .tool-btn.active { background: var(--accent); color: white; }
+
+      /* 参数面板 */
+      .side-panel {
+        width: 300px;
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        display: flex; flex-direction: column; padding: 20px; gap: 20px;
+        overflow-y: auto;
+        box-shadow: inset -1px 0 0 rgba(255,255,255,0.05);
+      }
+      .panel-section { display: none; flex-direction: column; gap: 16px; }
+      .panel-section.active { display: flex; }
+      .section-title { font-size: 0.9rem; font-weight: 600; color: var(--sub); margin-bottom: 8px; }
+
+      /* 画布区 */
+      .canvas-container-wrap {
+        flex: 1;
+        background: #000;
+        display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden;
+      }
+      .canvas-box {
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        background: white;
+      }
+
+      /* 表单组件美化 */
+      select, input[type="range"] {
+        width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); 
+        border-radius: 6px; color: var(--text); padding: 8px; font-size: 0.85rem; outline: none;
+      }
+      input[type="range"] {
+        padding: 0; height: 4px; accent-color: var(--accent); cursor: pointer;
+      }
+      input[type="color"] {
+        background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px;
+      }
+      
+      /* 预设配色板 */
+      .color-palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 8px; }
+      .palette-btn { 
+        padding: 6px 0; border: none; border-radius: 4px; font-size: 0.65rem; font-weight: 800; cursor: pointer;
+        opacity: 0.8; transition: transform 0.2s, opacity 0.2s; border: 1px solid rgba(255,255,255,0.1);
+      }
+      .palette-btn:hover { transform: translateY(-2px); opacity: 1; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+      
+      /* 元素属性 */
+      .prop-row { display: flex; flex-direction: column; gap: 8px; }
+      .prop-row label { font-size: 0.8rem; color: var(--sub); display: flex; justify-content: space-between; }
+      .btn {
+        padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+        transition: 0.2s; text-align: center;
+      }
+      .btn-primary { background: var(--accent); color: white; }
+      .btn-ghost { background: var(--border); color: var(--text); }
+
+      /* 贴图格 */
+      .sticker-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      }
+      .sticker-item {
+        aspect-ratio: 1; background: var(--border); border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+      }
+      
+      .btn:active, .tool-btn:active, .sticker-item:active { transform: scale(0.96); }
+      
+      /* Toast */
+      #loading-toast {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.8); padding: 8px 16px; border-radius: 20px; z-index: 1000; display: none;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading-toast">处理中...</div>
+
+    <header>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <a href="index.html" style="color: var(--sub); text-decoration: none; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          返回门户
+        </a>
+        <h1 class="logo">封面精修大师</h1>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-ghost" id="import-btn">导入背景</button>
+        <button class="btn btn-primary" id="export-btn" style="background: linear-gradient(135deg, #ff2442, #ff7e5f);">保存封面</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="toolbar">
+        <div class="tool-btn active" data-target="section-image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>背景</span>
+        </div>
+        <div class="tool-btn" data-target="section-text">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+          <span>文字</span>
+        </div>
+        <div class="tool-btn" data-target="section-sticker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>贴图</span>
+        </div>
+        <div class="tool-btn" data-target="section-ai">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          <span style="color:var(--accent);">AI抠图</span>
+        </div>
+        <div class="tool-btn" data-target="section-template">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          <span>模板库</span>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <!-- 背景管理 -->
+        <div class="panel-section active" id="section-image">
+           <div class="section-title">画幅与背景</div>
+           <div class="prop-row">
+             <label>画布比例</label>
+             <select id="canvas-ratio">
+               <option value="0.75">3:4 (小红书)</option>
+               <option value="1">1:1 (正方形)</option>
+               <option value="0.5625">9:16 (纵向)</option>
+               <option value="1.777">16:9 (横屏)</option>
+             </select>
+           </div>
+           <div class="prop-row">
+             <label>亮度</label>
+             <input type="range" id="filter-brightness" min="-1" max="1" step="0.01" value="0">
+           </div>
+           <div class="prop-row">
+             <label>对比度 (增强色彩)</label>
+             <input type="range" id="filter-contrast" min="-1" max="1" step="0.01" value="0">
+           </div>
+           <div class="prop-row">
+             <label>饱和度 (鲜艳度)</label>
+             <input type="range" id="filter-saturation" min="-1" max="1" step="0.01" value="0">
+           </div>
+           <div class="prop-row">
+             <label>模糊 (背景虚化)</label>
+             <input type="range" id="filter-blur" min="0" max="2" step="0.05" value="0">
+           </div>
+           <button class="btn btn-ghost" id="clear-canvas" style="margin-top: 8px;">清空全部元素</button>
+        </div>
+
+        <!-- 文字管理 -->
+        <div class="panel-section" id="section-text">
+           <div class="section-title">添加文字</div>
+           <button class="btn btn-primary" id="add-text-btn">+ 插入文本框</button>
+           <div class="prop-row" id="text-props" style="display: none; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
+             
+             <!-- 新增大师预设色盘 -->
+             <label style="color: var(--accent);">👑 专享灵感色盘 (一键渲染)</label>
+             <div class="color-palette-grid">
+               <!-- 个人主视觉 IP 色 -->
+               <button class="palette-btn" data-fill="#FFFFFF" data-stroke="#2c50ab" data-width="8" style="background:#2c50ab; color:#FFFFFF;" title="经典航海白">航海白</button>
+               <button class="palette-btn" data-fill="#fbbf24" data-stroke="#2c50ab" data-width="8" style="background:#fbbf24; color:#2c50ab;" title="黄金舰队">黄金蓝</button>
+               
+               <!-- 预设色 -->
+               <button class="palette-btn" data-fill="#FF00FF" data-stroke="#FFFFFF" data-width="6" style="background:#FF00FF; color:#FFFFFF; -webkit-text-stroke: 1px #000;" title="霓虹赛博">赛博</button>
+               <button class="palette-btn" data-fill="#E5FF00" data-stroke="#1A1A1A" data-width="8" style="background:#E5FF00; color:#1A1A1A;" title="酸性明黄">酸质</button>
+               <button class="palette-btn" data-fill="#FAB617" data-stroke="#E30613" data-width="4" style="background:#FAB617; color:#E30613;" title="柯达复古">柯达</button>
+               <button class="palette-btn" data-fill="#00FFFF" data-stroke="#210B4B" data-width="5" style="background:#00FFFF; color:#210B4B;" title="合成器浪潮蓝">电音</button>
+               <button class="palette-btn" data-fill="#FFFFFF" data-stroke="#000000" data-width="12" style="background:#FFFFFF; color:#000000;" title="街头高反差">百搭</button>
+               
+               <!-- Gruvbox 全套胶片工作流 -->
+               <button class="palette-btn" data-fill="#fb4934" data-stroke="#cc241d" data-width="4" style="background:#fb4934; color:#cc241d;" title="相纸过曝红">深邃红</button>
+               <button class="palette-btn" data-fill="#fe8019" data-stroke="#d65d0e" data-width="4" style="background:#fe8019; color:#d65d0e;" title="复古夕阳橙">复古橙</button>
+               <button class="palette-btn" data-fill="#fabd2f" data-stroke="#d79921" data-width="4" style="background:#fabd2f; color:#d79921;" title="老旧路灯黄">胶片黄</button>
+               <button class="palette-btn" data-fill="#b8bb26" data-stroke="#98971a" data-width="4" style="background:#b8bb26; color:#98971a;" title="墨绿苔藓色">苔藓绿</button>
+               <button class="palette-btn" data-fill="#8ec07c" data-stroke="#689d6a" data-width="4" style="background:#8ec07c; color:#689d6a;" title="经典薄荷青">褪色青</button>
+               <button class="palette-btn" data-fill="#83a598" data-stroke="#458588" data-width="4" style="background:#83a598; color:#458588;" title="做旧深湖蓝">深湖蓝</button>
+               <button class="palette-btn" data-fill="#d3869b" data-stroke="#b16286" data-width="4" style="background:#d3869b; color:#b16286;" title="暗角胶片紫">胶片紫</button>
+               <button class="palette-btn" data-fill="#ebdbb2" data-stroke="#a89984" data-width="4" style="background:#ebdbb2; color:#3c3836;" title="泛黄羊皮纸">羊皮纸</button>
+               <button class="palette-btn" data-fill="#282828" data-stroke="#928374" data-width="4" style="background:#282828; color:#ebdbb2;" title="沉淀焦糖黑">焦糖黑</button>
+               
+               <!-- Catppuccin 清冷滤镜 -->
+               <button class="palette-btn" data-fill="#f2cdcd" data-stroke="#11111b" data-width="4" style="background:#f2cdcd; color:#11111b;" title="火狐粉红">火狐粉</button>
+               <button class="palette-btn" data-fill="#f5c2e7" data-stroke="#11111b" data-width="4" style="background:#f5c2e7; color:#11111b;" title="赛博粉紫">冷粉紫</button>
+               <button class="palette-btn" data-fill="#74c7ec" data-stroke="#11111b" data-width="4" style="background:#74c7ec; color:#11111b;" title="霓虹湖蓝">清冷蓝</button>
+               
+               <!-- SynthWave '84 补充 -->
+               <button class="palette-btn" data-fill="#FFF800" data-stroke="#FF00FF" data-width="6" style="background:#FFF800; color:#FF00FF;" title="警告亮明黄">霓虹黄</button>
+             </div>
+             
+             <label>字体颜色</label>
+             <input type="color" id="text-color" value="#ffffff">
+             <div style="display: flex; gap: 8px;">
+               <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="margin-bottom: 0;">字体样式</label>
+                    <button id="load-system-fonts" style="background: var(--accent); color: white; border: none; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; cursor: pointer;">一键扫描系统字体</button>
+                  </div>
+                  <select id="text-font-family">
+                    <option value="PingFang SC">苹方 (Mac/iOS)</option>
+                    <option value="Microsoft YaHei">微软雅黑 (Win)</option>
+                    <option value="SimHei">黑体</option>
+                    <option value="SimKait">楷体</option>
+                    <option value="SimSun">宋体</option>
+                    <option value="LiSu">隶书</option>
+                    <option value="STXingkai">华文行楷</option>
+                    <option value="Impact">Impact (粗犷)</option>
+                    <option value="Arial">Arial</option>
+                  </select>
+                  <input type="text" id="custom-font-name" placeholder="或手动输入系统字体名" style="font-size: 0.7rem; padding: 4px 8px; margin-top: 6px; width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 4px;">
+                </div>
+               <div style="width: 80px;">
+                 <label>字号</label>
+                 <input type="number" id="text-font-size" value="40" style="width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px;">
+               </div>
+             </div>
+             <div style="display: flex; gap: 8px;">
+                <button class="btn btn-ghost" id="text-bold-btn" style="flex:1; padding: 6px;">B</button>
+                <button class="btn btn-ghost" id="text-italic-btn" style="flex:1; padding: 6px;">I</button>
+             </div>
+             <label>描边粗细</label>
+             <input type="range" id="text-stroke-width" min="0" max="10" value="0">
+             <label>描边颜色</label>
+             <input type="color" id="text-stroke-color" value="#000000">
+             <label style="display:flex;justify-content:space-between;align-items:center;">背景填充 <button id="text-bg-clear" style="background:var(--border);border:none;color:var(--sub);font-size:0.65rem;padding:2px 8px;border-radius:4px;cursor:pointer;">✕ 无背景</button></label>
+             <input type="color" id="text-bg-color" value="#ff2442">
+             <button class="btn btn-ghost" id="delete-element" style="color: #ff4d4f; margin-top: 8px;">删除选中</button>
+
+           </div>
+        </div>
+
+        <!-- 贴图管理 -->
+        <div class="panel-section" id="section-sticker">
+            <div class="section-title">内置贴图</div>
+            <div class="sticker-grid">
+              <div class="sticker-item" data-val="🔥">🔥</div>
+              <div class="sticker-item" data-val="⭐">⭐</div>
+              <div class="sticker-item" data-val="✅">✅</div>
+              <div class="sticker-item" data-val="📷">📷</div>
+              <div class="sticker-item" data-val="🎨">🎨</div>
+              <div class="sticker-item" data-val="✨">✨</div>
+              <div class="sticker-item" data-val="❤️">❤️</div>
+              <div class="sticker-item" data-val="📌">📌</div>
+              <div class="sticker-item" data-val="🎁">🎁</div>
+            </div>
+            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div class="section-title" style="margin-bottom: 0;">自定义贴图</div>
+              <button class="btn btn-ghost" id="upload-sticker-btn" style="border: 1px dashed var(--border);">+ 上传本地贴图</button>
+              <input type="file" id="sticker-file-input" style="display: none;" accept="image/*,.svg">
+            </div>
+            <div style="font-size: 0.75rem; color: var(--sub);">* 点击图标或上传后自动添加</div>
+        </div>
+
+        <!-- AI 抠图 -->
+        <div class="panel-section" id="section-ai">
+            <div class="section-title">AI 智能抠图</div>
+            <div class="prop-row">
+               <label>remove.bg API Key</label>
+               <input type="text" id="rmbg-api-key" placeholder="输入免费 API Key" style="width: 100%; background: var(--border); border: none; color: white; padding: 10px; border-radius: 8px; font-size: 0.8rem;">
+            </div>
+            <button class="btn btn-primary" id="ai-rmbg-btn" style="background: linear-gradient(135deg, #a855f7, #6366f1); margin-top: 8px;">一键抠图并添加为主体</button>
+            <input type="file" id="ai-rmbg-file" style="display:none;" accept="image/*,.svg">
+            <p style="font-size: 0.75rem; color: var(--sub); line-height: 1.6;">上传任意包含人物或商品的照片，AI 将抹除背景，并作为透明元素直接添加到当前封面上。支持无限期缩放排版。</p>
+        </div>
+
+        <!-- 模板管理 -->
+        <div class="panel-section" id="section-template">
+            <div class="section-title">模板与归档</div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                <button class="btn btn-primary" id="save-tpl-btn">导出排版配置</button>
+                <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%;">
+                    <hr style="flex: 1; border: none; border-top: 1px solid var(--border);">
+                    <span style="font-size: 0.7rem; color: var(--sub); padding: 0 10px;">或</span>
+                    <hr style="flex: 1; border: none; border-top: 1px solid var(--border);">
+                </div>
+                <button class="btn btn-ghost" id="load-tpl-btn" style="border: 1px dashed var(--sub);">📂 导入本地模板 (.json)</button>
+                <input type="file" id="tpl-file-input" style="display:none;" accept=".json">
+            </div>
+            <div style="font-size: 0.7rem; color: var(--sub); line-height: 1.6; margin-top: 12px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                ✅ 保存模板时，会完整记录画布背景色、画幅比例。<br>
+                ✅ 以及画布上的所有文字、贴图的位置及样式设定。<br>
+                ✅ 不保留背景图片本身（仅保存排版结构），方便下次一键套用新底图。
+            </div>
+        </div>
+        
+        <!-- 全局通用对象控制面板 (选中时浮现) -->
+        <div class="panel-section" id="global-element-props" style="display: none; margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px;">
+            <div class="section-title" style="color: var(--accent);">高级设置</div>
+            
+            <div style="display: flex; gap: 4px; border: 1px solid rgba(255,255,255,0.05); padding: 4px; border-radius: 8px;">
+               <button class="btn btn-ghost" title="左对齐" id="align-left" style="padding: 4px 6px; flex: 1; font-size: 0.8rem;">⇤</button>
+               <button class="btn btn-ghost" title="水平居中" id="align-center-x" style="padding: 4px 6px; flex: 1; font-size: 0.8rem;">⬌</button>
+               <button class="btn btn-ghost" title="右对齐" id="align-right" style="padding: 4px 6px; flex: 1; font-size: 0.8rem;">⇥</button>
+               <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 2px;"></div>
+               <button class="btn btn-ghost" title="顶对齐" id="align-top" style="padding: 4px 6px; flex: 1; font-size: 0.8rem;">⇡</button>
+               <button class="btn btn-ghost" title="垂直居中" id="align-center-y" style="padding: 4px 6px; flex: 1; font-size: 0.8rem;">⬍</button>
+               <button class="btn btn-ghost" title="底对齐" id="align-bottom" style="padding: 4px 6px; flex: 1; font-size: 0.8rem;">⇣</button>
+            </div>
+
+            <label style="margin-top:4px; display:flex; align-items:center; gap:6px; cursor: pointer; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+               <input type="checkbox" id="unlock-ratio-cb" style="width: auto;"> 允许自由拉伸 (解除比例锁定)
+            </label>
+            <div id="stroke-pattern-area" style="display:none; margin-top: 8px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+               <label style="font-size: 0.8rem; color: var(--text);">高级图案轮廓边缘</label>
+               <button class="btn btn-ghost" id="upload-stroke-pattern-btn" style="width: 100%; font-size: 0.75rem; padding: 6px; margin-top: 4px; border: 1px dashed var(--sub);">📂 上传图片作为图案描边</button>
+               <input type="file" id="stroke-pattern-file" style="display:none;" accept="image/*">
+               <p style="font-size: 0.65rem; color: var(--sub); line-height: 1.4; margin-top: 4px;">* 仅对文字、上传的SVG图标图形边缘生效。</p>
+            </div>
+            
+            <div id="image-stroke-area" style="display:none; margin-top: 8px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+               <label style="font-size: 0.8rem; color: var(--text);">图片实体硬边轮廓 (支持材质)</label>
+               <div style="display:flex; flex-direction:column; gap: 4px; margin-top: 8px;">
+                   <div style="display:flex; align-items:center; gap: 8px;">
+                       <label style="font-size:0.7rem; color:var(--sub); width:50px;">出体间距</label>
+                       <input type="range" id="img-outline-distance" min="0" max="60" value="0" style="flex: 1;">
+                   </div>
+                   <div style="display:flex; align-items:center; gap: 8px;">
+                       <label style="font-size:0.7rem; color:var(--sub); width:50px;">描边粗细</label>
+                       <input type="color" id="img-outline-color" value="#ffffff" style="width: 24px; height: 16px; padding: 0; outline: none;">
+                       <input type="range" id="img-outline-width" min="0" max="60" value="0" style="flex: 1;">
+                   </div>
+               </div>
+               <div style="display:flex; gap: 6px; align-items: center; margin-top: 8px;">
+                   <button class="btn btn-ghost" id="img-outline-pattern-btn" style="flex:1; font-size: 0.70rem; padding: 6px; border: 1px dashed var(--sub); text-align:center;">📂 上传图案边框</button>
+                   <input type="file" id="img-outline-pattern-file" style="display:none;" accept="image/*">
+                   <button class="btn btn-ghost" id="img-outline-clear-pattern" style="font-size: 0.70rem; padding: 6px; color: var(--accent);">清除图案</button>
+               </div>
+               <p style="font-size: 0.65rem; color: var(--sub); line-height: 1.4; margin-top: 4px;">* 支持脱出主体一定距离，形成悬浮效果。</p>
+               <button class="btn btn-ghost" id="edit-crop-btn" style="width: 100%; font-size: 0.8rem; padding: 6px; margin-top: 8px; border: 1px solid var(--accent); color: var(--text);">启用高级裁剪 / 翻转该层</button>
+            </div>
+            
+            <button class="btn btn-ghost" id="global-delete-element" style="color: #ff4d4f; margin-top: 8px; background: rgba(255,77,79,0.1);">删除此元素</button>
+        </div>
+      </div>
+
+      <div class="canvas-container-wrap">
+        <div class="canvas-box">
+          <canvas id="c"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <!-- 剪裁模态弹窗 -->
+    <div id="cropper-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column;">
+      <div style="padding:16px; display:flex; justify-content:space-between; align-items:center; background:#111; border-bottom: 1px solid #333;">
+        <div style="color:white; font-size:1.1rem; font-weight:bold;">图片精细裁切边际</div>
+        <div style="display:flex; gap:12px;">
+          <button class="btn btn-ghost" id="cropper-flip-x" style="color:var(--sub); border:1px solid #333; font-size: 0.8rem;">水平翻转</button>
+          <button class="btn btn-ghost" id="cropper-flip-y" style="color:var(--sub); border:1px solid #333; font-size: 0.8rem;">垂直翻转</button>
+          <button class="btn btn-ghost" id="cropper-cancel" style="color:#aaa; font-size: 0.8rem;">取消</button>
+          <button class="btn btn-primary" id="cropper-confirm" style="background:var(--accent); font-size: 0.8rem; padding: 6px 16px;">应用裁切</button>
+        </div>
+      </div>
+      <div style="flex:1; width:100%; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+         <div style="max-width:90%; max-height:90%;">
+            <img id="cropper-image" style="max-width:100%; display:block;" src="">
+         </div>
+      </div>
+    </div>
+
+    <input type="file" id="file-input" style="display: none;" accept="image/*,.svg">
+
+    <script>
+      // === IndexedDB Bridge ===
+      const BridgeDB = {
+        name: 'ZhiRenDaShu_Bridge',
+        store: 'image_transfer',
+        async load() {
+          const db = await this.open();
+          return new Promise((res) => {
+            const tx = db.transaction(this.store, 'readonly');
+            const s = tx.objectStore(this.store);
+            const req = s.getAll();
+            req.onsuccess = () => { s.clear(); res(req.result); };
+          });
+        },
+        open() {
+          return new Promise((res) => {
+            const req = indexedDB.open(this.name, 1);
+            req.onupgradeneeded = () => req.result.createObjectStore(this.store, { autoIncrement: true });
+            req.onsuccess = () => res(req.result);
+          });
+        }
+      };
+
+      // === 初始化 Fabric 画布 ===
+      const canvas = new fabric.Canvas('c', {
+        backgroundColor: '#fff',
+        preserveObjectStacking: true
+      });
+
+      // 调整画布尺寸
+      function resizeCanvas(ratio) {
+        const wrap = document.querySelector('.canvas-container-wrap');
+        const maxW = wrap.clientWidth * 0.9;
+        const maxH = wrap.clientHeight * 0.9;
+        
+        let targetW = maxW;
+        let targetH = maxW / ratio;
+        
+        if (targetH > maxH) {
+          targetH = maxH;
+          targetW = maxH * ratio;
+        }
+        
+        canvas.setDimensions({ width: targetW, height: targetH });
+        canvas.renderAll();
+      }
+
+      window.addEventListener('resize', () => resizeCanvas(parseFloat(document.getElementById('canvas-ratio').value)));
+      resizeCanvas(0.75);
+
+      // === 侧边栏切换 ===
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+          document.getElementById(btn.dataset.target).classList.add('active');
+        });
+      });
+
+      // === 核心逻辑：导入图片 ===
+      function setBackgroundImage(url) {
+        fabric.Image.fromURL(url, (img) => {
+          const ratio = img.width / img.height;
+          // 根据图片建议比例
+          document.getElementById('canvas-ratio').value = ratio > 1.2 ? "1.777" : (ratio < 0.8 ? "0.75" : "1");
+          resizeCanvas(parseFloat(document.getElementById('canvas-ratio').value));
+          
+          img.set({
+            scaleX: canvas.width / img.width,
+            scaleY: canvas.height / img.height,
+            selectable: false,
+            evented: false,
+            originX: 'left',
+            originY: 'top'
+          });
+          canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+        });
+      }
+
+      document.getElementById('import-btn').addEventListener('click', () => document.getElementById('file-input').click());
+      document.getElementById('file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) setBackgroundImage(URL.createObjectURL(file));
+      });
+
+      // 检查联动数据与配置
+      window.addEventListener('DOMContentLoaded', async () => {
+        const apiKeyInput = document.getElementById('rmbg-api-key');
+        if (apiKeyInput) {
+            apiKeyInput.value = localStorage.getItem('COVER_RMBG_KEY') || '';
+            apiKeyInput.addEventListener('input', (e) => localStorage.setItem('COVER_RMBG_KEY', e.target.value));
+        }
+
+        const data = await BridgeDB.load();
+        if (data && data.length > 0) {
+          setBackgroundImage(URL.createObjectURL(data[0].blob));
+        }
+      });
+
+      // === 文字操作 ===
+      document.getElementById('add-text-btn').addEventListener('click', () => {
+        const text = new fabric.IText('点击修改文字', {
+          left: canvas.width / 2,
+          top: canvas.height / 2,
+          fontSize: 40,
+          fill: '#ffffff',
+          fontFamily: 'PingFang SC',
+          fontWeight: 'bold',
+          originX: 'center',
+          originY: 'center',
+          backgroundColor: '',   // 默认透明，不强制背景色
+          padding: 6
+        });
+        canvas.add(text);
+        canvas.setActiveObject(text);
+      });
+
+      // 监听选中元素
+      canvas.on('selection:created', onSelect);
+      canvas.on('selection:updated', onSelect);
+      canvas.on('selection:cleared', () => document.getElementById('text-props').style.display = 'none');
+
+      function onSelect(e) {
+        const obj = e.selected[0];
+        
+        if (obj) {
+           document.getElementById('global-element-props').style.display = 'flex';
+           document.getElementById('unlock-ratio-cb').checked = obj.lockUniScaling === false;
+           
+           const hasStroke = obj.type === 'i-text' || obj.type === 'text' || obj.type === 'path' || obj.type === 'group';
+           document.getElementById('stroke-pattern-area').style.display = hasStroke ? 'block' : 'none';
+
+           const isImage = obj.type === 'image';
+           document.getElementById('image-stroke-area').style.display = isImage ? 'block' : 'none';
+           if (isImage) {
+               document.getElementById('img-outline-color').value = obj._myOutlineColor || '#ffffff';
+               document.getElementById('img-outline-width').value = obj._myOutlineWidth || 0;
+               document.getElementById('img-outline-distance').value = obj._myOutlineDist || 0;
+           }
+        } else {
+           document.getElementById('global-element-props').style.display = 'none';
+        }
+
+        if (obj && (obj.type === 'i-text' || obj.type === 'text')) {
+           document.getElementById('text-props').style.display = 'flex';
+           document.getElementById('text-color').value = obj.fill || '#ffffff';
+           document.getElementById('text-font-family').value = obj.fontFamily || 'PingFang SC';
+           document.getElementById('custom-font-name').value = obj.fontFamily || '';
+           document.getElementById('text-font-size').value = obj.fontSize || 40;
+           document.getElementById('text-stroke-width').value = obj.strokeWidth || 0;
+           document.getElementById('text-stroke-color').value = typeof obj.stroke === 'string' ? obj.stroke : '#000000';
+           if (obj.backgroundColor) document.getElementById('text-bg-color').value = obj.backgroundColor;
+           
+           const boldBtn = document.getElementById('text-bold-btn');
+           const italicBtn = document.getElementById('text-italic-btn');
+           boldBtn.style.background = obj.fontWeight === 'bold' ? 'var(--accent)' : 'var(--border)';
+           italicBtn.style.background = obj.fontStyle === 'italic' ? 'var(--accent)' : 'var(--border)';
+        } else {
+           document.getElementById('text-props').style.display = 'none';
+        }
+      }
+
+      // 实时更新属性
+      document.getElementById('text-color').oninput = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('fill', e.target.value); canvas.renderAll(); }
+      };
+      document.getElementById('text-font-family').onchange = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { 
+          obj.set('fontFamily', e.target.value); 
+          document.getElementById('custom-font-name').value = e.target.value;
+          canvas.renderAll(); 
+        }
+      };
+      document.getElementById('custom-font-name').oninput = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('fontFamily', e.target.value); canvas.renderAll(); }
+      };
+      document.getElementById('text-font-size').oninput = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('fontSize', parseInt(e.target.value)); canvas.renderAll(); }
+      };
+      document.getElementById('text-bold-btn').onclick = () => {
+        const obj = canvas.getActiveObject();
+        if (obj) {
+          const isBold = obj.fontWeight === 'bold';
+          obj.set('fontWeight', isBold ? 'normal' : 'bold');
+          document.getElementById('text-bold-btn').style.background = !isBold ? 'var(--accent)' : 'var(--border)';
+          canvas.renderAll();
+        }
+      };
+      document.getElementById('text-italic-btn').onclick = () => {
+        const obj = canvas.getActiveObject();
+        if (obj) {
+          const isItalic = obj.fontStyle === 'italic';
+          obj.set('fontStyle', isItalic ? 'normal' : 'italic');
+          document.getElementById('text-italic-btn').style.background = !isItalic ? 'var(--accent)' : 'var(--border)';
+          canvas.renderAll();
+        }
+      };
+      document.getElementById('text-stroke-width').oninput = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('strokeWidth', parseInt(e.target.value)); canvas.renderAll(); }
+      };
+      document.getElementById('text-stroke-color').oninput = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('stroke', e.target.value); canvas.renderAll(); }
+      };
+      document.getElementById('text-bg-color').oninput = (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('backgroundColor', e.target.value); canvas.renderAll(); }
+      };
+      // 「无背景」按钮 —— 一键清除填充色
+      document.getElementById('text-bg-clear').onclick = () => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('backgroundColor', ''); canvas.renderAll(); }
+      };
+      document.getElementById('delete-element').onclick = () => {
+        const obj = canvas.getActiveObject();
+        if (obj) { canvas.remove(obj); canvas.discardActiveObject(); canvas.renderAll(); }
+      };
+
+      // ================= 全局属性控制选项绑定 =================
+      document.getElementById('unlock-ratio-cb').onchange = (e) => {
+         const obj = canvas.getActiveObject();
+         if (obj) {
+             const unlocked = e.target.checked;
+             obj.set({ lockUniScaling: !unlocked });
+             obj.setControlsVisibility({
+                mt: unlocked, mb: unlocked, ml: unlocked, mr: unlocked
+             });
+             canvas.renderAll();
+         }
+      };
+
+      const strokePatternBtn = document.getElementById('upload-stroke-pattern-btn');
+      const strokePatternInput = document.getElementById('stroke-pattern-file');
+      strokePatternBtn.onclick = () => strokePatternInput.click();
+      strokePatternInput.onchange = (e) => {
+         const file = e.target.files[0];
+         if (!file) return;
+         const obj = canvas.getActiveObject();
+         if (obj) {
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                fabric.util.loadImage(f.target.result, (img) => {
+                    const pattern = new fabric.Pattern({
+                        source: img,
+                        repeat: 'repeat'
+                    });
+                    obj.set('stroke', pattern);
+                    // 默认加大线宽以便明显看清图案
+                    if (!obj.strokeWidth || obj.strokeWidth < 5) {
+                        obj.set('strokeWidth', 20);
+                        const swInput = document.getElementById('text-stroke-width');
+                        if (swInput) swInput.value = 20;
+                    }
+                    canvas.renderAll();
+                });
+            };
+            reader.readAsDataURL(file);
+         }
+         e.target.value = '';
+      };
+
+      document.getElementById('global-delete-element').onclick = () => {
+         const obj = canvas.getActiveObject();
+         if (obj) { canvas.remove(obj); canvas.discardActiveObject(); canvas.renderAll(); }
+      };
+
+      // === 对齐操作绑定 ===
+      const alignUpdate = (action) => {
+          const obj = canvas.getActiveObject();
+          if (!obj) return;
+          const bound = obj.getBoundingRect();
+          switch(action) {
+              case 'cx': obj.centerH(); break;
+              case 'cy': obj.centerV(); break;
+              case 'left': obj.set('left', obj.left - bound.left); break;
+              case 'right': obj.set('left', obj.left + (canvas.width - (bound.left + bound.width))); break;
+              case 'top': obj.set('top', obj.top - bound.top); break;
+              case 'bottom': obj.set('top', obj.top + (canvas.height - (bound.top + bound.height))); break;
+          }
+          obj.setCoords(); 
+          canvas.renderAll();
+      };
+      
+      document.getElementById('align-center-x').onclick = () => alignUpdate('cx');
+      document.getElementById('align-center-y').onclick = () => alignUpdate('cy');
+      document.getElementById('align-left').onclick = () => alignUpdate('left');
+      document.getElementById('align-right').onclick = () => alignUpdate('right');
+      document.getElementById('align-top').onclick = () => alignUpdate('top');
+      document.getElementById('align-bottom').onclick = () => alignUpdate('bottom');
+
+      // === 图片实体描边合成器 ===
+      function generateImageOutlineBase64(mainImg, outlineWidth, outlineDistance, outlineColorStr, patternFile) {
+          return new Promise((resolve) => {
+              const canvas = document.createElement('canvas');
+              const R = outlineWidth + outlineDistance;
+              const padding = R + 2; 
+              canvas.width = mainImg.width + padding * 2;
+              canvas.height = mainImg.height + padding * 2;
+              const ctx = canvas.getContext('2d');
+              ctx.imageSmoothingEnabled = true;
+
+              const steps = 36;
+              const stepAngle = (Math.PI * 2) / steps;
+
+              if (outlineWidth > 0) {
+                  // 画最大扩散底本 A
+                  for(let i = 0; i < steps; i++) {
+                      const dx = Math.cos(stepAngle * i) * R;
+                      const dy = Math.sin(stepAngle * i) * R;
+                      ctx.drawImage(mainImg, padding + dx, padding + dy, mainImg.width, mainImg.height);
+                  }
+
+                  // 掏空内部扩散距离 B
+                  if (outlineDistance > 0) {
+                      ctx.globalCompositeOperation = 'destination-out';
+                      for(let i = 0; i < steps; i++) {
+                          const dx = Math.cos(stepAngle * i) * outlineDistance;
+                          const dy = Math.sin(stepAngle * i) * outlineDistance;
+                          ctx.drawImage(mainImg, padding + dx, padding + dy, mainImg.width, mainImg.height);
+                      }
+                  }
+
+                  // 填充颜色或者材质
+                  ctx.globalCompositeOperation = 'source-in';
+                  if (patternFile) {
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                          const pImg = new Image();
+                          pImg.onload = () => {
+                              const pat = ctx.createPattern(pImg, 'repeat');
+                              ctx.fillStyle = pat;
+                              ctx.fillRect(0, 0, canvas.width, canvas.height);
+                              finish();
+                          };
+                          pImg.src = e.target.result;
+                      };
+                      reader.readAsDataURL(patternFile);
+                      return; // 等待回调
+                  } else {
+                      ctx.fillStyle = outlineColorStr;
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  }
+              }
+
+              finish();
+
+              function finish() {
+                  ctx.globalCompositeOperation = 'source-over';
+                  ctx.drawImage(mainImg, padding, padding, mainImg.width, mainImg.height);
+                  resolve(canvas.toDataURL('image/png'));
+              }
+          });
+      }
+
+      async function applyImageOutline(obj, width, dist, colorStr, patternFile) {
+          if(!obj._outlineOrigEl) {
+              obj._outlineOrigEl = obj.getElement(); 
+              obj._outlineOrigScaleX = obj.scaleX;
+              obj._outlineOrigScaleY = obj.scaleY;
+          }
+
+          if(width === 0 && dist === 0) {
+              const origImg = obj._outlineOrigEl;
+              obj.setElement(origImg);
+              obj.set({ width: origImg.width, height: origImg.height });
+              canvas.renderAll();
+              return;
+          }
+
+          const toast = document.getElementById('loading-toast');
+          toast.innerText = '合成实体轮廓中...';
+          toast.style.display = 'block';
+
+          const dataUrl = await generateImageOutlineBase64(obj._outlineOrigEl, width, dist, colorStr, patternFile);
+          
+          fabric.util.loadImage(dataUrl, (img) => {
+              obj.setElement(img);
+              obj.set({ width: img.width, height: img.height });
+              canvas.renderAll();
+              toast.style.display = 'none';
+          });
+      }
+      
+      let _outlineTimer = null;
+      function triggerOutlineRender(obj) {
+          clearTimeout(_outlineTimer);
+          _outlineTimer = setTimeout(() => {
+              const w = obj._myOutlineWidth || 0;
+              const d = obj._myOutlineDist || 0;
+              applyImageOutline(obj, w, d, document.getElementById('img-outline-color').value, obj._myOutlinePatternFile);
+          }, 250);
+      }
+
+      document.getElementById('img-outline-distance').oninput = (e) => {
+          const obj = canvas.getActiveObject();
+          if (obj && obj.type === 'image') {
+              obj._myOutlineDist = parseInt(e.target.value);
+              triggerOutlineRender(obj);
+          }
+      };
+
+      document.getElementById('img-outline-width').oninput = (e) => {
+          const obj = canvas.getActiveObject();
+          if (obj && obj.type === 'image') {
+              obj._myOutlineWidth = parseInt(e.target.value);
+              triggerOutlineRender(obj);
+          }
+      };
+      
+      document.getElementById('img-outline-color').oninput = (e) => {
+          const obj = canvas.getActiveObject();
+          if (obj && obj.type === 'image') {
+              obj._myOutlineColor = e.target.value;
+              if ((obj._myOutlineWidth || 0) > 0) triggerOutlineRender(obj);
+          }
+      };
+
+      document.getElementById('img-outline-pattern-btn').onclick = () => document.getElementById('img-outline-pattern-file').click();
+      document.getElementById('img-outline-pattern-file').onchange = (e) => {
+          const file = e.target.files[0];
+          if(!file) return;
+          const obj = canvas.getActiveObject();
+          if (obj && obj.type === 'image') {
+              obj._myOutlinePatternFile = file;
+              if((obj._myOutlineWidth || 0) === 0) { 
+                  obj._myOutlineWidth = 15; 
+                  document.getElementById('img-outline-width').value = 15; 
+              }
+              triggerOutlineRender(obj);
+          }
+      };
+      
+      document.getElementById('img-outline-clear-pattern').onclick = () => {
+          const obj = canvas.getActiveObject();
+          if (obj && obj.type === 'image') {
+              obj._myOutlinePatternFile = null;
+              document.getElementById('img-outline-pattern-file').value = '';
+              if ((obj._myOutlineWidth || 0) > 0) triggerOutlineRender(obj);
+          }
+      };
+
+      // === 贴图操作 ===
+      document.querySelectorAll('.sticker-item').forEach(item => {
+        item.onclick = () => {
+          const text = new fabric.Text(item.dataset.val, {
+            left: canvas.width / 2,
+            top: canvas.height / 2,
+            fontSize: 80,
+            originX: 'center',
+            originY: 'center'
+          });
+          canvas.add(text);
+          canvas.setActiveObject(text);
+        };
+      });
+
+      // 自定义贴图上传
+      const stickerBtn = document.getElementById('upload-sticker-btn');
+      const stickerInput = document.getElementById('sticker-file-input');
+      stickerBtn.onclick = () => stickerInput.click();
+      stickerInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+           const reader = new FileReader();
+           reader.onload = (f) => {
+              fabric.loadSVGFromURL(f.target.result, (objects, options) => {
+                 const obj = fabric.util.groupSVGElements(objects, options);
+                 obj.scaleToWidth(canvas.width * 0.3);
+                 obj.set({
+                   left: canvas.width / 2,
+                   top: canvas.height / 2,
+                   originX: 'center',
+                   originY: 'center'
+                 });
+                 canvas.add(obj);
+                 canvas.setActiveObject(obj);
+              });
+           };
+           reader.readAsDataURL(file);
+        } else {
+           const reader = new FileReader();
+           reader.onload = (f) => {
+             fabric.Image.fromURL(f.target.result, (img) => {
+                img.scaleToWidth(canvas.width * 0.3);
+                img.set({
+                  left: canvas.width / 2,
+                  top: canvas.height / 2,
+                  originX: 'center',
+                  originY: 'center'
+                });
+                canvas.add(img);
+                canvas.setActiveObject(img);
+             });
+           };
+           reader.readAsDataURL(file);
+        }
+        e.target.value = '';
+      };
+
+      // === AI 抠图接入 ===
+      document.getElementById('ai-rmbg-btn').onclick = () => document.getElementById('ai-rmbg-file').click();
+      document.getElementById('ai-rmbg-file').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const apiKey = document.getElementById('rmbg-api-key').value.trim();
+        if (!apiKey) {
+            e.target.value = ''; // 清空选中状态
+            return alert("请先在上方输入 remove.bg 的 API Key！");
+        }
+
+        const toast = document.getElementById('loading-toast');
+        toast.innerText = 'AI 抠图中 (需5~10秒)，请勿操作...';
+        toast.style.display = 'block';
+
+        try {
+            const formData = new FormData();
+            formData.append('size', 'auto');
+            formData.append('image_file', file);
+
+            const res = await fetch('https://api.remove.bg/v1.0/removebg', {
+                method: 'POST',
+                headers: { 'X-Api-Key': apiKey },
+                body: formData
+            });
+
+            if (!res.ok) {
+                let errorMsg = `抠图异常 (HTTP ${res.status})`;
+                try {
+                    const errorData = await res.json();
+                    if (errorData.errors && errorData.errors.length > 0) {
+                        errorMsg += `\n原因：${errorData.errors[0].title}`;
+                        if (errorData.errors[0].detail) errorMsg += ` - ${errorData.errors[0].detail}`;
+                    }
+                } catch(e) { }
+                if (res.status === 402) errorMsg = "余额不足 (402)：当前 API Key 的免费抠图额度（50张/月）已耗尽，请去官网更换新的 Key！";
+                if (res.status === 403) errorMsg = "密钥失效 (403)：当前 API Key 无效或被封禁。";
+                throw new Error(errorMsg);
+            }
+            
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            
+            fabric.Image.fromURL(url, (img) => {
+               // 以画布 50% 宽度适配
+               img.scaleToWidth(canvas.width * 0.5);
+               img.set({
+                 left: canvas.width / 2,
+                 top: canvas.height / 2,
+                 originX: 'center',
+                 originY: 'center'
+               });
+               canvas.add(img);
+               canvas.setActiveObject(img);
+               toast.style.display = 'none';
+            });
+        } catch(err) {
+            alert(err.message);
+            toast.style.display = 'none';
+        }
+        e.target.value = '';
+      };
+
+      // === 模板功能 ===
+      document.getElementById('save-tpl-btn').onclick = () => {
+         const json = canvas.toJSON(); // 将画布上的元素转换为 JSON
+         // 清除背景图片自身的路径（只保留排版结构）
+         if (json.backgroundImage) {
+             delete json.backgroundImage;
+         }
+         // 附带当前画幅比例
+         json._customBoxRatio = document.getElementById('canvas-ratio').value;
+         
+         const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+         saveAs(blob, `封面模板排版_${Date.now()}.json`);
+      };
+
+      document.getElementById('load-tpl-btn').onclick = () => document.getElementById('tpl-file-input').click();
+      document.getElementById('tpl-file-input').onchange = (e) => {
+         const file = e.target.files[0];
+         if (!file) return;
+         const reader = new FileReader();
+         reader.onload = (f) => {
+            try {
+               const jsonStr = f.target.result;
+               const data = JSON.parse(jsonStr);
+               
+               // 如果保存了之前的画布比例，则先恢复画幅大小
+               if (data._customBoxRatio) {
+                   document.getElementById('canvas-ratio').value = data._customBoxRatio;
+                   resizeCanvas(parseFloat(data._customBoxRatio));
+               }
+               
+               // 现有背景不会被覆盖替换
+               const oldBg = canvas.backgroundImage;
+               
+               // 加载 JSON（保留选定元素和排列）
+               canvas.loadFromJSON(data, () => {
+                   // 恢复原有的背景
+                   if (oldBg) canvas.setBackgroundImage(oldBg, canvas.renderAll.bind(canvas));
+                   canvas.renderAll();
+                   alert('✅ 模板加载成功，现在可以 [导入背景] 替换底图了！');
+               });
+            } catch (err) {
+               alert("读取失败：这不是有效的模板文件");
+            }
+         };
+         reader.readAsText(file);
+         e.target.value = '';
+      };
+
+      // === 背景高级滤镜组 ===
+      function applyBgFilters() {
+        const bg = canvas.backgroundImage;
+        if (!bg) return;
+        bg.filters = [];
+        const bVal = parseFloat(document.getElementById('filter-brightness').value);
+        if(bVal !== 0) bg.filters.push(new fabric.Image.filters.Brightness({ brightness: bVal }));
+        
+        const cVal = parseFloat(document.getElementById('filter-contrast').value);
+        if(cVal !== 0) bg.filters.push(new fabric.Image.filters.Contrast({ contrast: cVal }));
+        
+        const sVal = parseFloat(document.getElementById('filter-saturation').value);
+        if(sVal !== 0) bg.filters.push(new fabric.Image.filters.Saturation({ saturation: sVal }));
+        
+        const blVal = parseFloat(document.getElementById('filter-blur').value);
+        if(blVal > 0) bg.filters.push(new fabric.Image.filters.Blur({ blur: blVal }));
+        
+        bg.applyFilters();
+        canvas.renderAll();
+      }
+      
+      ['filter-brightness', 'filter-contrast', 'filter-saturation', 'filter-blur'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.addEventListener('input', applyBgFilters);
+      });
+
+      // === 专属灵感配色预设绑定 ===
+      document.querySelectorAll('.palette-btn').forEach(btn => {
+        btn.onclick = () => {
+          const activeObj = canvas.getActiveObject();
+          if (activeObj && activeObj.type === 'i-text') {
+            activeObj.set({
+              fill: btn.dataset.fill,
+              stroke: btn.dataset.stroke,
+              strokeWidth: parseFloat(btn.dataset.width),
+              paintFirst: 'stroke'
+            });
+            // 同步侧边面板显示当前色
+            document.getElementById('text-color').value = btn.dataset.fill;
+            document.getElementById('text-stroke-color').value = btn.dataset.stroke;
+            document.getElementById('text-stroke-width').value = btn.dataset.width;
+            
+            canvas.renderAll();
+          } else {
+             alert('💡 请先在左侧画板中点击选中一段你想改色的文字！');
+          }
+        };
+      });
+
+      // === 画布比例 ===
+      document.getElementById('canvas-ratio').onchange = (e) => resizeCanvas(parseFloat(e.target.value));
+
+      // === 导出 ===
+      document.getElementById('export-btn').onclick = () => {
+        const dataURL = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
+        saveAs(dataURL, `植人大树封面精修_${Date.now()}.png`);
+      };
+
+      document.getElementById('clear-canvas').onclick = () => {
+        if (confirm('确定清空所有文字和贴图吗？')) { canvas.getObjects().forEach(obj => { if(obj !== canvas.backgroundImage) canvas.remove(obj); }); canvas.renderAll(); }
+      };
+
+      // === 系统字体扫描功能 ===
+      const loadFontsBtn = document.getElementById('load-system-fonts');
+      loadFontsBtn.onclick = async () => {
+        if (!window.queryLocalFonts) {
+          alert('抱歉，您的浏览器太旧或尚未支持此功能。请在输入框手动输入字体名。');
+          return;
+        }
+
+        try {
+          loadFontsBtn.textContent = '扫描中...';
+          loadFontsBtn.disabled = true;
+          
+          const availableFonts = await window.queryLocalFonts();
+          const fontSelect = document.getElementById('text-font-family');
+          
+          // 获取唯一字体族
+          const fontFamilies = Array.from(new Set(availableFonts.map(f => f.family))).sort();
+          
+          if (fontFamilies.length > 0) {
+            // 清理原有选项，保留默认推荐
+            const defaults = fontSelect.innerHTML;
+            fontSelect.innerHTML = `<optgroup label="系统全量字体">${fontFamilies.map(f => `<option value="${f}">${f}</option>`).join('')}</optgroup><optgroup label="基础预设">${defaults}</optgroup>`;
+            
+            loadFontsBtn.textContent = `已载入 ${fontFamilies.length} 种`;
+            loadFontsBtn.style.background = '#34d399'; // 变绿表示成功
+          }
+        } catch (err) {
+          console.error(err);
+          alert('读取字体权限被拒绝或失败。请检查浏览器地址栏右侧权限设置。');
+          loadFontsBtn.textContent = '扫描失败';
+          loadFontsBtn.disabled = false;
+        }
+      };
+
+      // === Cropper 图片裁切模块 ===
+      let cropperInstance = null;
+      document.getElementById('edit-crop-btn').onclick = () => {
+         const obj = canvas.getActiveObject();
+         if (!obj || obj.type !== 'image') return;
+         
+         // 优先克隆尚未做实体描边前的原始底图
+         const origEl = obj._outlineOrigEl || obj.getElement();
+         const modal = document.getElementById('cropper-modal');
+         const cropImg = document.getElementById('cropper-image');
+         cropImg.src = origEl.src;
+         
+         modal.style.display = 'flex';
+         
+         if (cropperInstance) { cropperInstance.destroy(); }
+         cropperInstance = new Cropper(cropImg, {
+             viewMode: 1,
+             dragMode: 'crop',
+             autoCropArea: 0.8,
+             background: false,
+             zoomable: true
+         });
+      };
+      
+      document.getElementById('cropper-cancel').onclick = () => {
+         document.getElementById('cropper-modal').style.display = 'none';
+         if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+      };
+
+      let cropperScaleX = 1; let cropperScaleY = 1;
+      document.getElementById('cropper-flip-x').onclick = () => { cropperScaleX = -cropperScaleX; cropperInstance.scaleX(cropperScaleX); };
+      document.getElementById('cropper-flip-y').onclick = () => { cropperScaleY = -cropperScaleY; cropperInstance.scaleY(cropperScaleY); };
+
+      document.getElementById('cropper-confirm').onclick = () => {
+         if (!cropperInstance) return;
+         const obj = canvas.getActiveObject();
+         if (!obj || obj.type !== 'image') return;
+         
+         const toast = document.getElementById('loading-toast');
+         toast.innerText = '正在应用裁切...';
+         toast.style.display = 'block';
+         
+         // 提取高画质无透明多余包裹底基的裁切图片
+         const croppedDataUrl = cropperInstance.getCroppedCanvas({
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+         }).toDataURL('image/png');
+         
+         // 重新写入图片，无损保留对象的其他属性
+         obj.setSrc(croppedDataUrl, () => {
+             // 取消裁切后可能带上的原先实体轮廓记忆，强制清除非核心像素防止渲染失控：
+             obj._outlineOrigEl = obj.getElement();
+             if ((obj._myOutlineWidth || 0) > 0) {
+                 // 如果图片自带描边设定，我们需要触发系统重新对它包覆描边
+                 if (typeof triggerOutlineRender === 'function') triggerOutlineRender(obj);
+             }
+             canvas.renderAll();
+             document.getElementById('cropper-modal').style.display = 'none';
+             if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+             toast.style.display = 'none';
+         });
+      };
+
+      // === 剪贴板与快捷键支持 ===
+      let _clipboard = null;
+
+      // 监听全局键盘 (复制、粘贴元素, 以及 Delete 删除)
+      window.addEventListener('keydown', (e) => {
+        const activeObj = canvas.getActiveObject();
+        // 如果正在编辑文本内部，放行给其原生功能
+        if (activeObj && activeObj.isEditing) return;
+
+        const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+        
+        // 删除键
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+           if (activeObj) {
+              e.preventDefault();
+              canvas.remove(activeObj);
+              canvas.discardActiveObject();
+              canvas.renderAll();
+           }
+        }
+        
+        // Ctrl+C (克隆)
+        if (isCtrlOrCmd && e.key.toLowerCase() === 'c') {
+           if (activeObj) {
+              activeObj.clone((cloned) => { _clipboard = cloned; });
+           }
+        }
+        
+        // Ctrl+V 内部元素层级粘贴（如果 _clipboard 有值）
+        if (isCtrlOrCmd && e.key.toLowerCase() === 'v') {
+           if (_clipboard) {
+              _clipboard.clone((clonedObj) => {
+                 canvas.discardActiveObject();
+                 clonedObj.set({
+                    left: clonedObj.left + 20,
+                    top: clonedObj.top + 20,
+                    evented: true
+                 });
+                 if (clonedObj.type === 'activeSelection') {
+                    clonedObj.canvas = canvas;
+                    clonedObj.forEachObject(obj => canvas.add(obj));
+                    clonedObj.setCoords();
+                 } else {
+                    canvas.add(clonedObj);
+                 }
+                 _clipboard.top += 20; 
+                 _clipboard.left += 20;
+                 canvas.setActiveObject(clonedObj);
+                 canvas.renderAll();
+              });
+           }
+        }
+      });
+
+      // 监听系统粘贴 (外部文字或截图)
+      window.addEventListener('paste', (e) => {
+         const activeObj = canvas.getActiveObject();
+         // 若当前在编辑文本框，交由浏览器原生处理
+         if (activeObj && activeObj.isEditing) return; 
+
+         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+
+         for (let index in items) {
+             const item = items[index];
+             // 从剪贴板粘贴图片/截图
+             if (item.kind === 'file' && item.type.startsWith('image/')) {
+                 e.preventDefault();
+                 const blob = item.getAsFile();
+                 const reader = new FileReader();
+                 reader.onload = (f) => {
+                    fabric.Image.fromURL(f.target.result, (img) => {
+                       img.scaleToWidth(canvas.width * 0.3);
+                       img.set({
+                         left: canvas.width / 2,
+                         top: canvas.height / 2,
+                         originX: 'center',
+                         originY: 'center'
+                       });
+                       canvas.add(img);
+                       canvas.setActiveObject(img);
+                    });
+                 };
+                 reader.readAsDataURL(blob);
+                 return; // 图片优先
+             }
+         }
+         
+         // 如果不是图片，尝试直接粘贴外部文本
+         const textStr = e.clipboardData.getData('text/plain');
+         if (textStr && textStr.trim() !== '') {
+             e.preventDefault();
+             const text = new fabric.IText(textStr, {
+                left: canvas.width / 2,
+                top: canvas.height / 2,
+                fontSize: 40,
+                fill: '#ffffff',
+                fontFamily: 'Outfit, Noto Sans SC',
+                fontWeight: '800',
+                originX: 'center',
+                originY: 'center',
+                padding: 6
+             });
+             canvas.add(text);
+             canvas.setActiveObject(text);
+         }
+      });
+
+      // GSAP 动画初始化
+      window.addEventListener('load', () => {
+          const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+          tl.to(".tool-btn", {
+              scale: 1,
+              opacity: 1,
+              duration: 0.6,
+              stagger: 0.05
+          })
+          .to(".panel-section.active > *", {
+              y: 0,
+              opacity: 1,
+              duration: 0.6,
+              stagger: 0.05
+          }, "-=0.4");
+      });
+
+    </script>
+  </body>
+</html>

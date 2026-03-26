@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植人大树自媒体封面制作器 | 视觉艺术门户</title>
+    <!--
+    作者：植人大树
+    个人主页：https://link3.cc/zhirendashu
+    版本：v1.3.0
+    发布日期：2026-03-17
+    开源协议：CC BY-NC-SA 4.0
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* ===== 设计系统：8px 基准间距 ===== */
+        :root {
+            --bg-dark: #05070a;
+            --surface-glass: rgba(22, 26, 36, 0.72);
+            --border-glass: rgba(255, 255, 255, 0.09);
+            --accent-primary: #6366f1;
+            --accent-secondary: #f43f5e;
+            --accent-sky: #0ea5e9;
+            --accent-green: #10b981;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --radius-xl: 24px;
+            --font-display: 'Outfit', 'Noto Sans SC', sans-serif;
+            --transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+
+            /* 8px 间距体系 */
+            --sp-1: 8px;
+            --sp-2: 16px;
+            --sp-3: 24px;
+            --sp-4: 32px;
+            --sp-5: 40px;
+            --sp-6: 48px;
+            --sp-7: 56px;
+            --sp-8: 64px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100dvh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== 动态背景 ===== */
+        .bg-blobs {
+            position: fixed; inset: 0;
+            z-index: -1; overflow: hidden;
+            filter: blur(80px); opacity: 0.5;
+            pointer-events: none;
+        }
+        .blob {
+            position: absolute; border-radius: 50%;
+            animation: blob-move 25s infinite alternate;
+        }
+        .blob-1 { width: 50vw; height: 50vw; background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%); top: -10%; right: -10%; }
+        .blob-2 { width: 50vw; height: 50vw; background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%); bottom: -10%; left: -10%; animation-delay: -8s; }
+        .blob-3 { width: 30vw; height: 30vw; background: radial-gradient(circle, var(--accent-sky) 0%, transparent 70%); top: 40%; left: 35%; animation-delay: -15s; opacity: 0.7; }
+        @keyframes blob-move {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(60px, 40px) scale(1.08); }
+        }
+
+        /* ===== 主容器：严格居中，左右对称 ===== */
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--sp-8) var(--sp-3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;       /* 水平全居中 */
+            gap: var(--sp-7);
+        }
+
+        /* ===== 头部：完全居中对齐 ===== */
+        header {
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            animation: fade-up 0.7s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--sp-2);
+        }
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .badge {
+            padding: 5px 18px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 100px;
+            color: var(--accent-primary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 3.2rem);
+            font-weight: 800;
+            letter-spacing: -0.05em; /* tracking-tighter */
+            background: linear-gradient(to right, #fff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .hero-desc {
+            color: var(--text-dim);
+            font-size: 1rem;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+        /* 三粒胶囊：等宽，完全对齐 */
+        .hero-pills {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--sp-1);
+            width: 100%;
+            margin-top: var(--sp-1);
+        }
+        .hero-pill {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 0;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--sp-1);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        /* ===== 工作流步骤条 ===== */
+        .workflow {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--sp-1);
+        }
+        .workflow-label {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .wf-bar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr; /* 三步等宽，箭头固定 */
+            align-items: center;
+            width: 100%;
+            max-width: 680px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: 100px;
+            padding: 6px;
+            gap: 0;
+        }
+        .wf-step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--sp-1);
+            padding: 10px var(--sp-2);
+            border-radius: 100px;
+        }
+        .wf-num {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 800;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .wf-step:nth-child(1) .wf-num { background: var(--accent-secondary); }
+        .wf-step:nth-child(3) .wf-num { background: var(--accent-primary); }
+        .wf-step:nth-child(5) .wf-num { background: var(--accent-green); }
+        .wf-text-box { display: flex; flex-direction: column; }
+        .wf-title { font-size: 0.82rem; font-weight: 600; }
+        .wf-desc { font-size: 0.7rem; color: var(--text-dim); }
+        .wf-arrow {
+            color: rgba(255,255,255,0.2);
+            font-size: 1.1rem;
+            text-align: center;
+            user-select: none;
+        }
+
+        /* ===== 工具卡片：固定四等分等宽换行 ===== */
+        .tool-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 变更为 4 等分 */
+            gap: var(--sp-3);
+            align-items: stretch;                  /* 等高 */
+        }
+        .glass-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-xl);
+            padding: var(--sp-4);
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-3);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
+            opacity: 0; /* 为 GSAP 初始状态準備 */
+            transform: translateY(20px);
+        }
+        .glass-card::after {
+            content: "";
+            position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%);
+            opacity: 0; transition: var(--transition); pointer-events: none;
+        }
+        .glass-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255,255,255,0.16);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.45), 0 0 16px var(--accent-glow);
+        }
+        .glass-card:hover::after { opacity: 1; transform: translate(25%, 25%); }
+
+        /* 步骤角标：完全对齐右上角 */
+        .card-step {
+            position: absolute;
+            top: var(--sp-2); right: var(--sp-2);
+            font-size: 0.65rem; font-weight: 700;
+            color: var(--text-dim); opacity: 0.45;
+            letter-spacing: 0.5px;
+        }
+
+        /* 图标盒子：所有卡片同尺寸，对齐顶部 */
+        .icon-box {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .glass-card:nth-child(1):hover .icon-box { background: var(--accent-secondary); border-color: var(--accent-secondary); box-shadow: 0 6px 20px rgba(244,63,94,0.35); }
+        .glass-card:nth-child(2):hover .icon-box { background: var(--accent-primary); border-color: var(--accent-primary); box-shadow: 0 6px 20px var(--accent-glow); }
+        .glass-card:nth-child(3):hover .icon-box { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 6px 20px rgba(16,185,129,0.35); }
+        .icon-box svg { width: 26px; height: 26px; color: #fff; }
+
+        /* 卡片文字区：flex-grow 填满，使底部 footer 始终对齐 */
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-1);
+        }
+        .card-content h2 {
+            font-size: 1.25rem;     /* 统一字号 */
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+        .card-content p {
+            color: var(--text-dim);
+            font-size: 0.88rem;
+            line-height: 1.75;
+            flex: 1;                /* 描述区撑开，使 footer 对齐底部 */
+        }
+
+        /* 卡片底部：固定高度，保证三列底部在同一水平线 */
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--sp-1);
+            padding-top: var(--sp-2);
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .tags { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+        .tag {
+            font-size: 0.7rem;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 100px;
+            color: var(--text-dim);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .go-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            padding: 6px 14px;
+            border-radius: 100px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
+            transition: var(--transition);
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .go-btn svg { width: 13px; height: 13px; transition: transform 0.25s; }
+        .glass-card:active {
+            transform: scale(0.98);
+        }
+
+        /* ===== 页脚：完全居中，行间距对齐 ===== */
+        footer {
+            width: 100%;
+            padding: var(--sp-6) 0 var(--sp-4);
+            text-align: center;
+            border-top: 1px solid var(--border-glass);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--sp-2);
+        }
+        .footer-logo { font-weight: 800; font-size: 1.25rem; letter-spacing: -1px; }
+        .footer-links { display: flex; gap: var(--sp-4); }
+        .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--accent-primary); }
+        .copyright { font-size: 0.78rem; color: #475569; }
+
+        /* ===== 响应式：小屏改为单列 ===== */
+        @media (max-width: 900px) {
+            .tool-grid { grid-template-columns: 1fr; }
+            .wf-bar { max-width: 100%; border-radius: 16px; grid-template-columns: 1fr; padding: var(--sp-1); }
+            .wf-arrow { transform: rotate(90deg); padding: 4px 0; }
+            .wf-step { justify-content: flex-start; padding: 12px var(--sp-2); }
+            .hero-pills { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .app { padding: var(--sp-5) var(--sp-2); gap: var(--sp-5); }
+            .glass-card { padding: var(--sp-3); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app">
+
+        <!-- 头部 -->
+        <header id="hero-header">
+            <div class="badge">自媒体创作工具集</div>
+            <h1>植人大树自媒体制作器</h1>
+            <p class="hero-desc">为内容创作者设计的专业封面工作平台，三步完成从拼图到精修的全流程。</p>
+            <div class="hero-pills">
+                <div class="hero-pill">无需设计基础</div>
+                <div class="hero-pill">三步完成封面</div>
+                <div class="hero-pill">高清本地导出</div>
+            </div>
+        </header>
+
+        <!-- 工作流步骤条 -->
+        <div class="workflow">
+            <div class="workflow-label">推荐工作流</div>
+            <div class="wf-bar">
+                <div class="wf-step">
+                    <div class="wf-num">1</div>
+                    <div class="wf-text-box">
+                        <div class="wf-title">拼图排版</div>
+                        <div class="wf-desc">多图合并成一张</div>
+                    </div>
+                </div>
+                <div class="wf-arrow">›</div>
+                <div class="wf-step">
+                    <div class="wf-num">2</div>
+                    <div class="wf-text-box">
+                        <div class="wf-title">比例转换</div>
+                        <div class="wf-desc">适配各平台尺寸</div>
+                    </div>
+                </div>
+                <div class="wf-arrow">›</div>
+                <div class="wf-step">
+                    <div class="wf-num">3</div>
+                    <div class="wf-text-box">
+                        <div class="wf-title">精修加字</div>
+                        <div class="wf-desc">文字贴图最终润色</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 三工具卡片：严格三等分 -->
+        <main class="tool-grid">
+
+            <!-- Step 1：拼图 -->
+            <a href="./小红书拼图工具.html" class="glass-card">
+                <span class="card-step">STEP 01</span>
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>小红书拼图大师</h2>
+                    <p>将多张照片智能合并为一张。宫格、长卷、相框、斜切四种排版，支持拖拽任意调整画面构图。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">智能拼图</span>
+                        <span class="tag">小红书风</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Step 2：比例转换 -->
+            <a href="./封面比例转换工具.html" class="glass-card">
+                <span class="card-step">STEP 02</span>
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 11V4h7M20 13v7h-7M4 17l6-6M14 10l6-6"/>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>封面比例转换工具</h2>
+                    <p>一键适配各平台尺寸。16:9 / 3:4 自由转换，模糊填充不留黑边，内置专业水印叠加体系。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">比例转换</span>
+                        <span class="tag">水印保护</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Step 3：精修 -->
+            <a href="./封面精修大师.html" class="glass-card">
+                <span class="card-step">STEP 03</span>
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>封面精修大师</h2>
+                    <p>最后的点睛之笔。自由添加文字和贴图，默认透明背景，按需叠加色块引导语排版。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">文字排版</span>
+                        <span class="tag">艺术贴图</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 新增：图片切分神器 -->
+            <a href="./图片切分神器.html" class="glass-card">
+                <span class="card-step" style="color:var(--accent-sky);">NEW</span>
+                <div class="icon-box" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
+                    <!-- 切割网格图标 -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-sky)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>图片切图神器</h2>
+                    <p>高效的单图切割工具。支持九宫格信息流排版及罕见的斜切提取透明导出。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">切九宫格</span>
+                        <span class="tag">斜切透明片</span>
+                    </div>
+                    <div class="go-btn" style="color:var(--accent-sky);">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+            <!-- 新增：前后对比展示工具 -->
+            <a href="./前后对比展示工具.html" class="glass-card">
+                <span class="card-step" style="color:var(--accent-primary);">NEW</span>
+                <div class="icon-box" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="12" y1="3" x2="12" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>前后对比展示工具</h2>
+                    <p>摄影师的“卖家秀”利器。支持横/竖/斜三向切割对比，自带 Before/After 动态标识水印。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">修图展示</span>
+                        <span class="tag">三向切割</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+        </main>
+
+        <!-- 新增美学引擎模块 -->
+        <div style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: var(--sp-6); gap: var(--sp-1);">
+            <div class="workflow-label">全网极客高端色彩引擎</div>
+            <div style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(90deg, #f43f5e, #f59e0b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">顶级色彩大师排版库</div>
+            <p style="color: var(--text-dim); font-size: 0.85rem; text-align: center; max-width: 600px;">专为高级影视海报和质感字幕打造的核心取色盘。完美移植开源圈好莱坞级电影质感与极简情绪颜色配方。</p>
+        </div>
+
+        <section class="tool-grid" style="margin-top: var(--sp-2);">
+            
+            <!-- 配色卡片1：字幕配色 -->
+            <a href="./顶级字幕配色直提库.html" class="glass-card">
+                <span class="card-step" style="color: #f43f5e;">HOT🔥</span>
+                <div class="icon-box" style="background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.3);">
+                    <!-- 文字Icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>影视字幕绝佳搭子</h2>
+                    <p>专治剪影等软件字幕变瘦发糊痛点！基于彻底的外扩张渲染引擎，字芯与边框完美解耦。直击各种质感双色提取。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">高级字幕</span>
+                        <span class="tag">双色解耦</span>
+                    </div>
+                    <div class="go-btn" style="color: #f43f5e;">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <!-- 配色卡片2：Gruvbox -->
+            <a href="./Gruvbox复古胶片色库.html" class="glass-card">
+                <div class="icon-box" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3);">
+                    <!-- 胶片/相机Icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="12" rx="10" ry="10"></ellipse><line x1="14.3" y1="16" x2="21" y2="16"></line><line x1="14.3" y1="8" x2="21" y2="8"></line><line x1="3" y1="12" x2="9.7" y2="12"></line><line x1="12" y1="2" x2="12" y2="8.7"></line>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>Gruvbox 胶片暗房</h2>
+                    <p>极客圈统治级流派。抛弃廉价的绝对黑白，全部采用老相纸浸泡过的温暖大地色。再现上世纪好莱坞经典底色厚重感。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">相纸冲洗</span>
+                        <span class="tag">黄铜大地</span>
+                    </div>
+                    <div class="go-btn" style="color: #f59e0b;">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <!-- 配色卡片3：Catppuccin -->
+            <a href="./Catppuccin色彩工作室.html" class="glass-card">
+                <div class="icon-box" style="background: rgba(192,132,252,0.1); border-color: rgba(192,132,252,0.3);">
+                    <!-- 咖啡/调色板图标 -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>Catppuccin 冰粉静室</h2>
+                    <p>极度柔和护眼的冷峻粉彩风。自带星冰乐、玛奇朵等冷调滤镜矩阵推算，一键生成当流的自媒体微光清冷情绪排版。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">清冷氛围</span>
+                        <span class="tag">低反差</span>
+                    </div>
+                    <div class="go-btn" style="color: #c084fc;">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <!-- 配色卡片4：NipponColors -->
+            <a href="./NipponColors东方传统色库.html" class="glass-card">
+                <span class="card-step" style="color: #Ea66a6;">NEW ✨</span>
+                <div class="icon-box" style="background: rgba(234, 102, 166, 0.1); border-color: rgba(234, 102, 166, 0.3);">
+                    <!-- 扇子/古典图标 -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#Ea66a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22v-7"></path><path d="M12 15a7 7 0 0 0 7-7 7 7 0 0 0-14 0 7 7 0 0 0 7 7z"></path>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>Nippon 东方雅韵</h2>
+                    <p>致敬 nipponcolors 网站。收录 28 款最具东方美学意境的传统色谱。国风海报、诗词散文及古典排版的顶级唯美点缀。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">古典意境</span>
+                        <span class="tag">东方色谱</span>
+                    </div>
+                    <div class="go-btn" style="color: #Ea66a6;">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+        </section>
+
+        <!-- 页脚 -->
+        <footer>
+            <div class="footer-logo">植人大树.</div>
+            <div class="footer-links">
+                <a href="https://link3.cc/zhirendashu" target="_blank">作者主页</a>
+                <a href="https://link3.cc/zhirendashu" target="_blank">哔哩哔哩</a>
+                <a href="https://link3.cc/zhirendashu" target="_blank">小红书</a>
+            </div>
+            <p class="copyright">© 2026 植人大树 · CC BY-NC-SA 4.0</p>
+            <script>
+                const __AUTH_SIGNATURE = "179689535&0814";
+                
+                // GSAP 入场动画
+                window.addEventListener('DOMContentLoaded', () => {
+                    const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+                    
+                    tl.from("#hero-header > *", {
+                        y: 30,
+                        opacity: 0,
+                        duration: 1,
+                        stagger: 0.1
+                    })
+                    .to(".glass-card", {
+                        y: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        stagger: 0.05
+                    }, "-=0.6");
+                });
+            </script>
+        </footer>
+
+    </div>
+</body>
+</html>

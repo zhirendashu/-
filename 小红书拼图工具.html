@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>小红书拼图大师 | 植人大树</title>
+    <!--
+    作者：植人大树
+    个人主页：https://link3.cc/zhirendashu
+    版本：v2.0.0
+    发布日期：2026-03-17
+    开源协议：CC BY-NC-SA 4.0
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #05070a;
+            --surface-glass: rgba(22, 26, 36, 0.72);
+            --border-glass: rgba(255, 255, 255, 0.09);
+            --accent-primary: #6366f1;
+            --accent-secondary: #f43f5e;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --radius: 12px;
+            --font-display: 'Outfit', 'Noto Sans SC', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 16px 32px;
+            background: rgba(10, 12, 16, 0.8);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+            word-break: keep-all;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            max-width: 1800px;
+            margin: 0 auto;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        /* 左侧预览区 */
+        .preview-area {
+            flex: 1;
+            background: rgba(0,0,0,0.4);
+            border: 1px dashed var(--border-glass);
+            border-radius: var(--radius);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        canvas {
+            max-width: 90%;
+            max-height: 90%;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        
+        .empty-tip {
+            position: absolute;
+            color: var(--text-dim);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* 右侧面板 */
+        .sidebar {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .panel-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        .panel-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 8px;
+        }
+
+        /* 缩略图队列 */
+        .queue-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 60px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .queue-item {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            cursor: move;
+            border: 2px solid transparent;
+        }
+        
+        .queue-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .queue-item .del-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 按钮与网格 */
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .style-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .style-btn.active, .style-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-primary);
+        }
+
+        input[type="text"], input[type="color"] {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+            font-family: inherit;
+        }
+
+        .btn {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { filter: brightness(1.1); }
+        .btn:active, .style-btn:active, .queue-item:active { transform: scale(0.96); }
+        .btn-gradient { background: linear-gradient(135deg, #f43f5e, #ff7e5f); }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        #loading {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            font-size: 1.2rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 滑动滚动条 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="loading"><div class="spinner"></div><div id="load-text">处理中...</div></div>
+
+    <header>
+        <h1>小红书拼图大师</h1>
+        <div style="color:var(--text-dim); font-size: 0.85rem;">拖拽排版 · 滚轮缩放 · 8K原画导出</div>
+    </header>
+
+    <div class="main-container">
+        <!-- 预览区 -->
+        <div class="preview-area" id="drop-zone">
+            <div class="empty-tip" id="empty-tip">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span>拖拽或点击添加图片</span>
+            </div>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="panel-card">
+                <div class="control-row">
+                    <span class="panel-title" style="border:none; padding:0;">图片队列 (拖拽排序)</span>
+                    <label class="btn" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.1);">
+                        + 添加图片
+                        <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+                    </label>
+                </div>
+                <div class="queue-container" id="queue-list"></div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">拼图模式</div>
+                <div class="style-grid" id="mode-group">
+                    <div class="style-btn active" data-mode="grid">宫格模式</div>
+                    <div class="style-btn" data-mode="long">无缝长卷</div>
+                    <div class="style-btn" data-mode="frame">留白相框</div>
+                    <div class="style-btn" data-mode="skew">斜切错落</div>
+                    <div class="style-btn" data-mode="pip" style="grid-column: span 2;">画中画 (拼图中拼图)</div>
+                </div>
+            </div>
+
+            <div class="panel-card" id="settings-panel">
+                <!-- 动态注入设置项 -->
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">模板与归档</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn btn-ghost" id="save-tpl-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); padding: 8px; border-radius: 6px; color: var(--text-main); font-size: 0.8rem; cursor: pointer;">导出排版配置 (.json)</button>
+                    <button class="btn btn-ghost" id="load-tpl-btn" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--text-dim); padding: 8px; border-radius: 6px; color: var(--text-main); font-size: 0.8rem; cursor: pointer;">导入本地模板 (.json)</button>
+                    <input type="file" id="tpl-file-input" style="display:none;" accept=".json">
+                    <input type="file" id="bg-file-input" style="display:none;" accept="image/*">
+                </div>
+            </div>
+
+            <!-- 输出质量选择 -->
+            <div class="panel-card">
+                <div class="panel-title">输出质量</div>
+                <div class="style-grid" id="quality-group" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="style-btn" data-width="2560" data-fmt="image/jpeg" data-q="0.95">高清 2K</div>
+                    <div class="style-btn active" data-width="3840" data-fmt="image/jpeg" data-q="0.97">超清 4K</div>
+                    <div class="style-btn" data-width="7680" data-fmt="image/png" data-q="1" style="color:var(--accent-secondary); border-color:var(--accent-secondary);">8K 原画</div>
+                </div>
+                <div id="quality-tip" style="font-size:0.75rem; color:var(--text-dim); text-align:center;">当前：超清 4K · 适合日常发布</div>
+            </div>
+
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+                <button class="btn" id="download-btn">⬇ 保存高清拼图</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" id="transfer-btn" style="flex:1; background: #3b82f6;">⇄ 传至转换</button>
+                    <button class="btn btn-gradient" id="refine-btn" style="flex:1;">✎ 传至精修</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IndexedDB 通信 -->
+    <script>
+        const BridgeDB = {
+            name: 'ZhiRenDaShu_Bridge',
+            store: 'image_transfer',
+            async save(images) {
+                const db = await this.open();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(this.store, 'readwrite');
+                    const s = tx.objectStore(this.store);
+                    s.clear();
+                    
+                    let count = 0;
+                    if(images.length === 0) return resolve();
+                    images.forEach(img => {
+                        const req = s.add(img);
+                        req.onsuccess = () => {
+                            count++;
+                            if (count === images.length) resolve();
+                        };
+                        req.onerror = e => reject(e);
+                    });
+                });
+            },
+            open() {
+                return new Promise((res) => {
+                    const req = indexedDB.open(this.name, 1);
+                    req.onupgradeneeded = () => {
+                        req.result.createObjectStore(this.store, { autoIncrement: true });
+                    };
+                    req.onsuccess = () => res(req.result);
+                });
+            }
+        };
+    </script>
+
+    <script>
+        const cvs = document.getElementById("canvas");
+        const ctx = cvs.getContext("2d");
+        const loading = document.getElementById("loading");
+        const loadText = document.getElementById("load-text");
+        
+        let sourceImages = []; // { id, img, file, sx, sy, scale, bgRemovedImg }
+        let currentMode = "grid";
+        let isDragging = false;
+        let dragIndex = -1;
+        let startX, startY;
+        let finalCanvasCache = null;
+        let renderTimer = null;
+        let customBgImg = null;
+
+        let splitRatios = {
+            grid2: 0.5,
+            grid3_y: 0.5,
+            grid3_x: 0.5,
+            skew2: 0.5,
+            skew3_1: 0.333,
+            skew3_2: 0.666
+        };
+        let splitLines = [];
+        let isDraggingSplit = false;
+        let dragSplitKey = null;
+        let hoverSplitKey = null;
+
+        // 设置项定义
+        // 提取公共的背景控件和边距控件 HTML
+        const bgControlHTML = `
+            <div class="control-row">
+                <span>背景填充</span>
+                <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
+                    <input type="color" id="param-bg" value="#ffffff" style="width: 32px; height: 24px; padding: 0; cursor: pointer; border: 1px solid var(--border-glass); background: transparent;">
+                    <button id="param-bg-img-btn" style="background: var(--surface-glass); border: 1px solid var(--border-glass); color: var(--text-main); border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">图源</button>
+                    <button id="param-bg-img-clear" style="display:none; background: var(--accent-secondary); border: none; color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">移除</button>
+                </div>
+            </div>
+        `;
+
+        const padControlHTML = `
+            <div class="control-row">
+                <span>边框距离 (固定选项)</span>
+                <select id="param-pad" style="width: 50%; font-size: 0.8rem;">
+                    <option value="0">无边距 (0)</option>
+                    <option value="20">窄边距 (20)</option>
+                    <option value="40">正常边 (40)</option>
+                    <option value="80">宽边框 (80)</option>
+                    <option value="120">特大宽 (120)</option>
+                    <option value="160">留白档 (160)</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <span>内容圆角 (Radius)</span>
+                <input type="range" id="param-radius" min="0" max="300" value="20" style="width: 50%;">
+            </div>
+        `;
+
+        // 设置项定义
+        const configUI = {
+            grid: `
+                <div class="control-row">
+                   <span>画布比例 (Ratio)</span>
+                   <select id="param-ratio" style="width: 50%; font-size: 0.8rem;">
+                       <option value="0.75">小红书 3:4 (推荐)</option>
+                       <option value="1">正方形 1:1</option>
+                       <option value="0.5625">竖屏 9:16 (抖音)</option>
+                       <option value="1.777">横屏 16:9 (B站)</option>
+                   </select>
+                </div>
+                <div class="control-row"><span>间距 (Gap)</span><input type="range" id="param-gap" min="0" max="100" value="20"></div>
+                ${padControlHTML}
+                ${bgControlHTML}
+            `,
+            long: `
+                <div class="control-row" style="color:var(--accent-primary); font-size:0.75rem;">长卷模式自动适应高度，无固定比例</div>
+                <div class="control-row"><span>间距 (Gap)</span><input type="range" id="param-gap" min="0" max="200" value="10"></div>
+                ${padControlHTML}
+                ${bgControlHTML}
+            `,
+            frame: `
+                <div class="control-row">
+                   <span>画布比例 (Ratio)</span>
+                   <select id="param-ratio" style="width: 50%; font-size: 0.8rem;">
+                       <option value="0.75">小红书 3:4 (推荐)</option>
+                       <option value="1">正方形 1:1</option>
+                       <option value="0.5625">竖屏 9:16 (抖音)</option>
+                   </select>
+                </div>
+                ${bgControlHTML}
+                <div class="control-row"><span>底部配文</span><input type="text" id="param-text" value="ZHIREN DASHU" placeholder="留白不显示"></div>
+                <div class="control-row"><span>文字颜色</span><input type="color" id="param-color" value="#000000"></div>
+            `,
+            skew: `
+                <div class="control-row">
+                   <span>画布比例 (Ratio)</span>
+                   <select id="param-ratio" style="width: 50%; font-size: 0.8rem;">
+                       <option value="0.75">小红书 3:4 (推荐)</option>
+                       <option value="1">正方形 1:1</option>
+                   </select>
+                </div>
+                <div class="control-row"><span>斜切角度</span><input type="range" id="param-angle" min="5" max="45" value="15"></div>
+                ${bgControlHTML}
+            `,
+            pip: `
+                <div class="control-row">
+                   <span>底图比例 (Ratio)</span>
+                   <select id="param-ratio" style="width: 50%; font-size: 0.8rem;">
+                       <option value="1.777">横版 16:9 (推荐底图)</option>
+                       <option value="0.75">竖版 3:4 (小红书)</option>
+                       <option value="1">正方形 1:1</option>
+                       <option value="0.5625">竖长版 9:16</option>
+                   </select>
+                </div>
+                <div class="control-row">
+                   <span>中心图比例</span>
+                   <select id="param-inner-ratio" style="width: 50%; font-size: 0.8rem;">
+                       <option value="1.333">4:3 (常见)</option>
+                       <option value="0.75">3:4 (竖向)</option>
+                       <option value="1">1:1</option>
+                       <option value="1.777">16:9</option>
+                   </select>
+                </div>
+                <div class="control-row"><span>背景模糊程度</span><input type="range" id="param-blur" min="0" max="80" value="30"></div>
+                <div class="control-row"><span>中心图缩放</span><input type="range" id="param-inner-scale" min="30" max="100" value="70"></div>
+            `
+        };
+
+        function initSettings() {
+            document.getElementById('settings-panel').innerHTML = configUI[currentMode];
+            document.querySelectorAll('#settings-panel input, #settings-panel select').forEach(inp => {
+                inp.addEventListener('input', triggerRender);
+                if(inp.tagName.toLowerCase() === 'select') {
+                    inp.addEventListener('change', triggerRender);
+                }
+            });
+
+            // 绑定自定义背景图事件
+            const bgBtn = document.getElementById("param-bg-img-btn");
+            const bgClear = document.getElementById("param-bg-img-clear");
+            if(bgBtn) {
+                bgBtn.addEventListener("click", () => document.getElementById("bg-file-input").click());
+            }
+            if(bgClear) {
+                if(customBgImg) bgClear.style.display = "block";
+                bgClear.addEventListener("click", () => {
+                    customBgImg = null;
+                    bgClear.style.display = "none";
+                    triggerRender();
+                });
+            }
+        }
+        initSettings();
+
+        // 质量切换
+        document.querySelectorAll('#quality-group .style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#quality-group .style-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const w = parseInt(btn.dataset.width);
+                if(w === 7680) document.getElementById('quality-tip').textContent = '当前：✦ 小红书 8K 原画直出 (长边<16000，且<15MB)';
+                else if(w === 3840) document.getElementById('quality-tip').textContent = '当前：超清 4K · 适合日常发布';
+                else document.getElementById('quality-tip').textContent = '当前：高清 2K · 文件较小';
+                triggerRender();
+            });
+        });
+
+        // 模式切换
+        document.querySelectorAll('#mode-group .style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#mode-group .style-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+                initSettings();
+                triggerRender();
+            });
+        });
+
+        // 获取输出设置
+        function getOutConfig() {
+            const active = document.querySelector('#quality-group .style-btn.active');
+            return {
+                w: parseInt(active.dataset.width),
+                fmt: active.dataset.fmt,
+                q: parseFloat(active.dataset.q)
+            };
+        }
+
+        // === 图片加载与队列 ===
+        document.getElementById('file-input').addEventListener('change', e => handleFiles([...e.target.files]));
+
+        // 拖拽上传
+        const dropZone = document.getElementById("drop-zone");
+        dropZone.addEventListener("dragover", e => e.preventDefault());
+        dropZone.addEventListener("drop", e => { e.preventDefault(); handleFiles([...e.dataTransfer.files]); });
+
+        function handleFiles(files) {
+            const imgs = files.filter(f => f.type.startsWith("image/"));
+            if(!imgs.length) return;
+            showLoad("处理图片中...");
+            let loaded = 0;
+            imgs.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        sourceImages.push({
+                            id: Date.now() + Math.random(),
+                            file: file,
+                            img: img,
+                            sx: 0, sy: 0,
+                            scale: 1.0,
+                            bgRemovedImg: null
+                        });
+                        loaded++;
+                        if(loaded === imgs.length) {
+                            hideLoad();
+                            renderQueue();
+                            triggerRender();
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderQueue() {
+            const q = document.getElementById("queue-list");
+            q.innerHTML = "";
+            sourceImages.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "queue-item";
+                div.innerHTML = `
+                    <img src="${item.bgRemovedImg ? item.bgRemovedImg.src : item.img.src}">
+                    <button class="del-btn" onclick="delImg(${index})">✕</button>
+                `;
+                q.appendChild(div);
+            });
+
+            // 拖拽排序
+            Sortable.create(q, {
+                animation: 150,
+                onEnd: evt => {
+                    const movedItem = sourceImages.splice(evt.oldIndex, 1)[0];
+                    sourceImages.splice(evt.newIndex, 0, movedItem);
+                    renderQueue();
+                    triggerRender();
+                }
+            });
+
+            document.getElementById("empty-tip").style.display = sourceImages.length > 0 ? "none" : "flex";
+            if(sourceImages.length === 0) {
+                cvs.width = 0; cvs.height = 0;
+                finalCanvasCache = null;
+            }
+        }
+
+        window.delImg = function(index) {
+            sourceImages.splice(index, 1);
+            renderQueue();
+            triggerRender();
+        }
+
+        // === Canvas 交互：拖拽与滚轮缩放 ===
+        let hitboxes = [];
+
+        cvs.addEventListener("pointermove", e => {
+            if (isDragging || isDraggingSplit || !sourceImages.length) return;
+            const rect = cvs.getBoundingClientRect();
+            const scaleX = cvs.width / rect.width;
+            const scaleY = cvs.height / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+            
+            let found = null;
+            const HIT_DIST = 40; 
+            for (let line of splitLines) {
+                if (line.type === 'h') {
+                    if (Math.abs(my - line.y) < HIT_DIST && mx >= line.x1 && mx <= line.x2) { found = line; break; }
+                } else if (line.type === 'v') {
+                    if (Math.abs(mx - line.x) < HIT_DIST && my >= line.y1 && my <= line.y2) { found = line; break; }
+                } else if (line.type === 'skew') {
+                    let lineYatX = line.yCenter - line.dx + (mx / cvs.width) * (2 * line.dx);
+                    if (Math.abs(my - lineYatX) < HIT_DIST) { found = line; break; }
+                }
+            }
+            
+            if (found) {
+                if (hoverSplitKey !== found.key) {
+                    hoverSplitKey = found.key;
+                    if (found.type === 'v') cvs.style.cursor = 'col-resize';
+                    else if (found.type === 'h') cvs.style.cursor = 'row-resize';
+                    else cvs.style.cursor = 'ns-resize';
+                    triggerRender();
+                }
+            } else if (hoverSplitKey) {
+                hoverSplitKey = null;
+                cvs.style.cursor = 'default';
+                triggerRender();
+            }
+        });
+
+        cvs.addEventListener("pointerdown", e => {
+            if(!sourceImages.length) return;
+            const rect = cvs.getBoundingClientRect();
+            const scaleX = cvs.width / rect.width;
+            const scaleY = cvs.height / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+
+            if (hoverSplitKey) {
+                isDraggingSplit = true;
+                dragSplitKey = hoverSplitKey;
+                return;
+            }
+
+            for(let i=hitboxes.length-1; i>=0; i--) {
+                const box = hitboxes[i];
+                if(mx >= box.x && mx <= box.x+box.w && my >= box.y && my <= box.y+box.h) {
+                    isDragging = true;
+                    dragIndex = box.index;
+                    startX = mx;
+                    startY = my;
+                    cvs.style.cursor = "grabbing";
+                    return;
+                }
+            }
+        });
+
+        window.addEventListener("pointermove", e => {
+            const rect = cvs.getBoundingClientRect();
+            const scaleX = cvs.width / rect.width;
+            const scaleY = cvs.height / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+
+            if (isDraggingSplit) {
+                const W = cvs.width;
+                const H = cvs.height;
+                const padEl = document.getElementById("param-pad");
+                const pad = padEl ? parseInt(padEl.value) : 0;
+                let newRatio;
+                
+                if (dragSplitKey === 'grid2' || dragSplitKey === 'grid3_y') {
+                    newRatio = (my - pad) / (H - pad*2);
+                } else if (dragSplitKey === 'grid3_x') {
+                    newRatio = (mx - pad) / (W - pad*2);
+                } else if (dragSplitKey.startsWith('skew')) {
+                    const line = splitLines.find(l => l.key === dragSplitKey);
+                    const dx = line ? line.dx : (H * Math.tan(parseInt(document.getElementById("param-angle").value) * Math.PI / 180));
+                    let newCenterY = my + dx - (mx / W) * (2 * dx);
+                    newRatio = newCenterY / H;
+                }
+                
+                newRatio = Math.max(0.1, Math.min(0.9, newRatio));
+                if (dragSplitKey === 'skew3_1') newRatio = Math.min(newRatio, splitRatios.skew3_2 - 0.1);
+                if (dragSplitKey === 'skew3_2') newRatio = Math.max(newRatio, splitRatios.skew3_1 + 0.1);
+
+                splitRatios[dragSplitKey] = newRatio;
+                triggerRender();
+                return;
+            }
+
+            if(!isDragging || dragIndex === -1) return;
+
+            const dx = mx - startX;
+            const dy = my - startY;
+            
+            const item = sourceImages[dragIndex];
+            const activeImg = item.bgRemovedImg || item.img;
+            
+            // 计算位移比例，用于归一化
+            const refW = activeImg.width;
+            const refH = activeImg.height;
+            
+            item.sx -= (dx / cvs.width) * refW * 2;
+            item.sy -= (dy / cvs.height) * refH * 2;
+
+            startX = mx;
+            startY = my;
+            triggerRender();
+        });
+
+        window.addEventListener("pointerup", () => {
+            isDragging = false;
+            isDraggingSplit = false;
+            dragSplitKey = null;
+            dragIndex = -1;
+            if (!hoverSplitKey) cvs.style.cursor = "default";
+            triggerRender();
+        });
+
+        // 滚轮缩放
+        cvs.addEventListener("wheel", e => {
+            e.preventDefault();
+            if(!sourceImages.length) return;
+            const rect = cvs.getBoundingClientRect();
+            const scaleX = cvs.width / rect.width;
+            const scaleY = cvs.height / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+
+            let hit = -1;
+            for(let i=hitboxes.length-1; i>=0; i--) {
+                const box = hitboxes[i];
+                if(mx >= box.x && mx <= box.x+box.w && my >= box.y && my <= box.y+box.h) {
+                    hit = box.index; break;
+                }
+            }
+            if(hit === -1) return;
+
+            const item = sourceImages[hit];
+            const delta = e.deltaY > 0 ? 0.94 : 1.06;
+            item.scale = Math.max(0.5, Math.min(4.0, item.scale * delta));
+            triggerRender();
+        }, { passive: false });
+
+
+        // === 核心渲染逻辑 ===
+        function triggerRender() {
+            if(renderTimer) clearTimeout(renderTimer);
+            renderTimer = setTimeout(render, 30);
+        }
+
+        function drawCover(ctx, item, x, y, rw, rh) {
+            const img = item.bgRemovedImg || item.img;
+            const scale = item.scale;
+            const imgRatio = img.width / img.height;
+            const boxRatio = rw / rh;
+            
+            let sw, sh;
+            // Cover 计算
+            if(imgRatio > boxRatio) {
+                sh = img.height / scale;
+                sw = sh * boxRatio;
+            } else {
+                sw = img.width / scale;
+                sh = sw / boxRatio;
+            }
+
+            // 限制拖拽偏移
+            let sx = (img.width - sw) / 2 + item.sx;
+            let sy = (img.height - sh) / 2 + item.sy;
+            
+            // 边缘保护（避免黑边）
+            ux = Math.max(0, Math.min(img.width - sw, sx));
+            uy = Math.max(0, Math.min(img.height - sh, sy));
+            // 写回修正后的值
+            item.sx = ux - (img.width - sw)/2;
+            item.sy = uy - (img.height - sh)/2;
+
+            const radiusEl = document.getElementById("param-radius");
+            const r = radiusEl ? parseInt(radiusEl.value) : 0;
+            
+            if(r > 0 && typeof ctx.roundRect === 'function') {
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(x, y, rw, rh, r);
+                ctx.clip();
+                ctx.drawImage(img, ux, uy, sw, sh, x, y, rw, rh);
+                ctx.restore();
+            } else {
+                ctx.drawImage(img, ux, uy, sw, sh, x, y, rw, rh);
+            }
+
+            hitboxes.push({ index: sourceImages.indexOf(item), x, y, w: rw, h: rh });
+
+            // 选中框反馈
+            if(isDragging && dragIndex === sourceImages.indexOf(item)) {
+                ctx.save();
+                ctx.beginPath();
+                if(r > 0 && typeof ctx.roundRect === 'function') {
+                    ctx.roundRect(x+2, y+2, rw-4, rh-4, r);
+                } else {
+                    ctx.rect(x+2, y+2, rw-4, rh-4);
+                }
+                ctx.fillStyle = "rgba(255, 36, 66, 0.15)";
+                ctx.fill();
+                ctx.strokeStyle = "#ff2442";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function fillBackgroundFn(ocx, w, h, bgColor) {
+            if(customBgImg) {
+                const imgRatio = customBgImg.width / customBgImg.height;
+                const boxRatio = w / h;
+                let sw, sh;
+                if(imgRatio > boxRatio) {
+                    sh = customBgImg.height;
+                    sw = sh * boxRatio;
+                } else {
+                    sw = customBgImg.width;
+                    sh = sw / boxRatio;
+                }
+                const sx = (customBgImg.width - sw) / 2;
+                const sy = (customBgImg.height - sh) / 2;
+                ocx.drawImage(customBgImg, sx, sy, sw, sh, 0, 0, w, h);
+            } else {
+                ocx.fillStyle = bgColor || "#ffffff";
+                ocx.fillRect(0,0,w,h);
+            }
+        }
+
+        function render() {
+            if(!sourceImages.length) return;
+            hitboxes = [];
+            splitLines = [];
+            const W = getOutConfig().w;
+            
+            // 获取下拉框选择的比例，如果没有(比如长卷模式)则默认 3:4 (0.75)
+            const ratioSelect = document.getElementById("param-ratio");
+            const ratio = ratioSelect ? parseFloat(ratioSelect.value) : 0.75;
+            let H = W / ratio;
+
+            // 创建离屏 Canvas
+            const off = document.createElement("canvas");
+            const ocx = off.getContext("2d");
+
+            if(currentMode === "grid") {
+                const padEl = document.getElementById("param-pad");
+                const pad = padEl ? parseInt(padEl.value) : 0;
+                const gap = parseInt(document.getElementById("param-gap").value);
+                const bgEl = document.getElementById("param-bg");
+                const bg = bgEl ? bgEl.value : "#ffffff";
+                off.width = W; off.height = H;
+                fillBackgroundFn(ocx, W, H, bg);
+                
+                const len = sourceImages.length;
+                if (len === 1) {
+                    drawCover(ocx, sourceImages[0], pad, pad, W - pad*2, H - pad*2);
+                } else if (len === 2) {
+                    const innerH = H - pad*2;
+                    const cw = W - pad*2;
+                    const row1_H = (innerH - gap) * splitRatios.grid2;
+                    const row2_H = (innerH - gap) - row1_H;
+                    drawCover(ocx, sourceImages[0], pad, pad, cw, row1_H);
+                    drawCover(ocx, sourceImages[1], pad, pad + row1_H + gap, cw, row2_H);
+                    splitLines.push({ type: 'h', key: 'grid2', y: pad + row1_H + gap/2, x1: pad, x2: pad+cw });
+                } else if (len === 3) {
+                    const cw = W - pad*2;
+                    const innerH = H - pad*2;
+                    const row1_H = (innerH - gap) * splitRatios.grid3_y;
+                    const row2_H = (innerH - gap) - row1_H;
+                    const col1_W = (cw - gap) * splitRatios.grid3_x;
+                    const col2_W = (cw - gap) - col1_W;
+                    drawCover(ocx, sourceImages[0], pad, pad, cw, row1_H);
+                    drawCover(ocx, sourceImages[1], pad, pad + row1_H + gap, col1_W, row2_H);
+                    drawCover(ocx, sourceImages[2], pad + col1_W + gap, pad + row1_H + gap, col2_W, row2_H);
+                    splitLines.push({ type: 'h', key: 'grid3_y', y: pad + row1_H + gap/2, x1: pad, x2: pad+cw });
+                    splitLines.push({ type: 'v', key: 'grid3_x', x: pad + col1_W + gap/2, y1: pad + row1_H + gap, y2: pad+innerH });
+                } else {
+                    let cols = 2, rows = 2;
+                    if(len<=4) { cols=2; rows=2; }
+                    else if(len<=6) { cols=3; rows=2; }
+                    else { cols=3; rows=3; }
+                    
+                    const cellW = (W - gap*(cols-1) - pad*2) / cols;
+                    const cellH = (H - gap*(rows-1) - pad*2) / rows;
+
+                    sourceImages.forEach((item, i) => {
+                        if(i >= cols*rows) return;
+                        const c = i % cols;
+                        const r = Math.floor(i / cols);
+                        drawCover(ocx, item, pad + c*(cellW+gap), pad + r*(cellH+gap), cellW, cellH);
+                    });
+                }
+
+            } else if(currentMode === "long") {
+                const padEl = document.getElementById("param-pad");
+                const pad = padEl ? parseInt(padEl.value) : 0;
+                const gap = parseInt(document.getElementById("param-gap").value);
+                const bgEl = document.getElementById("param-bg");
+                const bg = bgEl ? bgEl.value : "#ffffff";
+                const innerW = W - pad*2;
+                
+                let totalH = pad * 2;
+                sourceImages.forEach(item => {
+                    const img = item.bgRemovedImg || item.img;
+                    totalH += innerW / (img.width / img.height);
+                });
+                totalH += gap * (sourceImages.length - 1);
+                
+                off.width = W; off.height = Math.round(totalH);
+                fillBackgroundFn(ocx, off.width, off.height, bg);
+                
+                let cy = pad;
+                sourceImages.forEach(item => {
+                    const img = item.bgRemovedImg || item.img;
+                    const ch = innerW / (img.width / img.height);
+                    drawCover(ocx, item, pad, cy, innerW, ch);
+                    cy += ch + gap;
+                });
+
+            } else if(currentMode === "frame") {
+                const bgEl = document.getElementById("param-bg");
+                const bg = bgEl ? bgEl.value : "#ffffff";
+                const tc = document.getElementById("param-color").value;
+                const txt = document.getElementById("param-text").value;
+                
+                off.width = W; off.height = H;
+                fillBackgroundFn(ocx, W, H, bg);
+                
+                const pad = W * 0.12;
+                const fSpace = H * 0.15;
+                const cw = W - pad*2;
+                const ch = H - pad - fSpace;
+                
+                const gap = 30;
+                const sh = (ch - gap*(sourceImages.length-1)) / sourceImages.length;
+                let cy = pad;
+                sourceImages.forEach(item => {
+                    drawCover(ocx, item, pad, cy, cw, sh);
+                    cy += sh + gap;
+                });
+
+                if(txt) {
+                    ocx.fillStyle = tc;
+                    ocx.textAlign = "center";
+                    ocx.textBaseline = "middle";
+                    ocx.font = `600 ${W*0.03}px var(--font-display)`;
+                    ocx.fillText(txt, W/2, H - fSpace/2);
+                }
+
+            } else if(currentMode === "skew") {
+                const angle = parseInt(document.getElementById("param-angle").value) * Math.PI / 180;
+                const bgEl = document.getElementById("param-bg");
+                const bg = bgEl ? bgEl.value : "#ffffff";
+                off.width = W; off.height = H;
+                fillBackgroundFn(ocx, W, H, bg);
+                
+                const len = sourceImages.length;
+                if(len===1 || len>3) {
+                    drawCover(ocx, sourceImages[0], 0,0,W,H);
+                } else {
+                    const dx = H * Math.tan(angle);
+                    if(len===2) {
+                        const splitY = H * splitRatios.skew2;
+                        ocx.save(); ocx.beginPath(); ocx.moveTo(0,0); ocx.lineTo(W,0); ocx.lineTo(W, splitY+dx); ocx.lineTo(0, splitY-dx); ocx.clip();
+                        drawCover(ocx, sourceImages[0], 0, 0, W, splitY + dx); ocx.restore();
+                        
+                        ocx.save(); ocx.beginPath(); ocx.moveTo(0, splitY-dx); ocx.lineTo(W, splitY+dx); ocx.lineTo(W, H); ocx.lineTo(0, H); ocx.clip();
+                        drawCover(ocx, sourceImages[1], 0, splitY - dx, W, H - (splitY - dx)); ocx.restore();
+                        
+                        ocx.lineWidth = 14; ocx.strokeStyle="#fff";
+                        ocx.beginPath(); ocx.moveTo(0, splitY-dx); ocx.lineTo(W, splitY+dx); ocx.stroke();
+                        splitLines.push({ type: 'skew', key: 'skew2', yCenter: splitY, dx: dx, x1: 0, x2: W });
+                    } else if(len===3) {
+                        const splitY1 = H * splitRatios.skew3_1;
+                        const splitY2 = H * splitRatios.skew3_2;
+                        ocx.save(); ocx.beginPath(); ocx.moveTo(0,0); ocx.lineTo(W,0); ocx.lineTo(W, splitY1+dx); ocx.lineTo(0, splitY1-dx); ocx.clip();
+                        drawCover(ocx, sourceImages[0], 0, 0, W, splitY1 + dx); ocx.restore();
+                        
+                        ocx.save(); ocx.beginPath(); ocx.moveTo(0, splitY1-dx); ocx.lineTo(W, splitY1+dx); ocx.lineTo(W, splitY2+dx); ocx.lineTo(0, splitY2-dx); ocx.clip();
+                        drawCover(ocx, sourceImages[1], 0, splitY1 - dx, W, (splitY2+dx) - (splitY1-dx)); ocx.restore();
+                        
+                        ocx.save(); ocx.beginPath(); ocx.moveTo(0, splitY2-dx); ocx.lineTo(W, splitY2+dx); ocx.lineTo(W, H); ocx.lineTo(0, H); ocx.clip();
+                        drawCover(ocx, sourceImages[2], 0, splitY2 - dx, W, H - (splitY2 - dx)); ocx.restore();
+
+                        ocx.lineWidth = 14; ocx.strokeStyle="#fff";
+                        ocx.beginPath(); ocx.moveTo(0, splitY1-dx); ocx.lineTo(W, splitY1+dx); ocx.stroke();
+                        ocx.beginPath(); ocx.moveTo(0, splitY2-dx); ocx.lineTo(W, splitY2+dx); ocx.stroke();
+                        splitLines.push({ type: 'skew', key: 'skew3_1', yCenter: splitY1, dx: dx, x1: 0, x2: W });
+                        splitLines.push({ type: 'skew', key: 'skew3_2', yCenter: splitY2, dx: dx, x1: 0, x2: W });
+                    }
+                }
+            } else if(currentMode === "pip") {
+                const blur = parseInt(document.getElementById("param-blur").value);
+                const innerScale = parseInt(document.getElementById("param-inner-scale").value) / 100;
+                const innerRatioSelect = document.getElementById("param-inner-ratio");
+                const innerRatio = innerRatioSelect ? parseFloat(innerRatioSelect.value) : 1.333;
+
+                off.width = W; off.height = H;
+                
+                // === 画背景 (优先使用第一张图) ===
+                const bgItem = sourceImages[0];
+                if(blur > 0) {
+                    ocx.filter = `blur(${blur}px) brightness(0.85)`;
+                }
+                const bExp = blur * 2; // 稍微向外溢出绘制，彻底解决高斯模糊后画布边缘出现白边的问题
+                drawCover(ocx, bgItem, -bExp, -bExp, W + bExp*2, H + bExp*2);
+                ocx.filter = "none";
+                
+                // === 画中心前景图 (如果有第二张就用第二张，没有就重用第一张) ===
+                if (innerScale > 0) {
+                    const fgItem = sourceImages.length > 1 ? sourceImages[1] : sourceImages[0];
+                    
+                    let maxInnerW = W * 0.95; 
+                    let maxInnerH = H * 0.95;
+                    
+                    let innerW = maxInnerW * innerScale;
+                    let innerH = innerW / innerRatio;
+                    // 如果高度超标，则以高度为基推算宽度
+                    if (innerH > maxInnerH * innerScale) {
+                        innerH = maxInnerH * innerScale;
+                        innerW = innerH * innerRatio;
+                    }
+                    
+                    const ix = (W - innerW) / 2;
+                    const iy = (H - innerH) / 2;
+                    
+                    // 添加一层高级的软阴影，让中心图更有立体悬浮感
+                    ocx.shadowColor = "rgba(0,0,0,0.6)";
+                    ocx.shadowBlur = W * 0.02;     
+                    ocx.shadowOffsetY = W * 0.01;  
+                    
+                    drawCover(ocx, fgItem, ix, iy, innerW, innerH);
+                    
+                    ocx.shadowColor = "transparent";
+                    ocx.shadowBlur = 0;
+                    ocx.shadowOffsetY = 0;
+                }
+            }
+
+            if (hoverSplitKey || isDraggingSplit) {
+                const activeKey = isDraggingSplit ? dragSplitKey : hoverSplitKey;
+                const line = splitLines.find(l => l.key === activeKey);
+                if (line) {
+                    ocx.save();
+                    ocx.strokeStyle = "rgba(99, 102, 241, 0.9)";
+                    ocx.lineWidth = 8;
+                    ocx.lineCap = "round";
+                    ocx.beginPath();
+                    if (line.type === 'h') {
+                        ocx.moveTo(line.x1, line.y); ocx.lineTo(line.x2, line.y);
+                    } else if (line.type === 'v') {
+                        ocx.moveTo(line.x, line.y1); ocx.lineTo(line.x, line.y2);
+                    } else if (line.type === 'skew') {
+                        ocx.moveTo(0, line.yCenter - line.dx); ocx.lineTo(line.x2, line.yCenter + line.dx);
+                    }
+                    ocx.stroke();
+                    ocx.restore();
+                }
+            }
+
+            cvs.width = off.width;
+            cvs.height = off.height;
+            ctx.drawImage(off, 0, 0);
+            finalCanvasCache = off;
+        }
+
+        // === 辅助 ===
+        function showLoad(text) { loadText.innerText = text; loading.style.display="flex"; }
+        function hideLoad() { loading.style.display="none"; }
+
+        // === 导出 ===
+        document.getElementById("download-btn").addEventListener("click", () => {
+            if(!finalCanvasCache) return alert("空画布");
+            showLoad("处理高清图片...");
+            const conf = getOutConfig();
+            setTimeout(() => {
+                finalCanvasCache.toBlob(blob => {
+                    const ext = conf.fmt === 'image/png' ? 'png' : 'jpg';
+                    saveAs(blob, `植人大树拼图_${Date.now()}.${ext}`);
+                    hideLoad();
+                }, conf.fmt, conf.q);
+            }, 100);
+        });
+
+        document.getElementById("transfer-btn").addEventListener("click", async () => {
+            if(!finalCanvasCache) return;
+            showLoad("打包传送中...");
+            const blob = await new Promise(r => finalCanvasCache.toBlob(r, 'image/png'));
+            await BridgeDB.save([{ name: `合成_${Date.now()}.png`, blob }]);
+            window.location.href = "封面比例转换工具.html?from=bridge";
+        });
+
+        document.getElementById("refine-btn").addEventListener("click", async () => {
+            if(!finalCanvasCache) return;
+            showLoad("打包传送中...");
+            const blob = await new Promise(r => finalCanvasCache.toBlob(r, 'image/png'));
+            await BridgeDB.save([{ name: `合成_${Date.now()}.png`, blob }]);
+            window.location.href = "封面精修大师.html?from=bridge";
+        });
+
+        // 自定义背景图片上传逻辑
+        const bgFileInput = document.getElementById('bg-file-input');
+        if (bgFileInput) {
+            bgFileInput.addEventListener('change', e => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = f => {
+                    const img = new Image();
+                    img.onload = () => {
+                        customBgImg = img;
+                        const clearBtn = document.getElementById("param-bg-img-clear");
+                        if(clearBtn) clearBtn.style.display = "block";
+                        triggerRender();
+                    };
+                    img.src = f.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            });
+        }
+
+        // === 模板功能 ===
+        const saveTplBtn = document.getElementById("save-tpl-btn");
+        if(saveTplBtn) {
+            saveTplBtn.addEventListener("click", () => {
+                const config = {
+                    mode: currentMode,
+                    params: {}
+                };
+                document.querySelectorAll('#settings-panel input, #settings-panel select').forEach(el => {
+                    if(el.id && el.type !== 'file') {
+                        config.params[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+                    }
+                });
+                if(customBgImg) {
+                    config.bgImg = customBgImg.src; 
+                }
+                
+                const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+                saveAs(blob, `小红书拼图排版模板_${Date.now()}.json`);
+            });
+        }
+
+        const loadTplBtn = document.getElementById("load-tpl-btn");
+        const tplFileInput = document.getElementById("tpl-file-input");
+        if(loadTplBtn && tplFileInput) {
+            loadTplBtn.addEventListener("click", () => tplFileInput.click());
+            tplFileInput.addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (f) => {
+                    try {
+                        const data = JSON.parse(f.target.result);
+                        if(data.mode) {
+                            document.querySelectorAll('#mode-group .style-btn').forEach(b => b.classList.remove('active'));
+                            const modeBtn = document.querySelector(`#mode-group .style-btn[data-mode="${data.mode}"]`);
+                            if(modeBtn) modeBtn.classList.add('active');
+                            currentMode = data.mode;
+                            initSettings(); 
+                            
+                            for(let key in data.params) {
+                                const el = document.getElementById(key);
+                                if(el) {
+                                    if(el.type === 'checkbox') el.checked = data.params[key];
+                                    else el.value = data.params[key];
+                                }
+                            }
+                            
+                            if(data.bgImg) {
+                                const img = new Image();
+                                img.onload = () => {
+                                    customBgImg = img;
+                                    const clearBtn = document.getElementById("param-bg-img-clear");
+                                    if(clearBtn) clearBtn.style.display = "block";
+                                    triggerRender();
+                                };
+                                img.src = data.bgImg;
+                            } else {
+                                customBgImg = null;
+                                const clearBtn = document.getElementById("param-bg-img-clear");
+                                if(clearBtn) clearBtn.style.display = 'none';
+                                triggerRender();
+                            }
+                            triggerRender();
+                            alert("模板排版配置已加载");
+                        }
+                    } catch(err) {
+                        alert("读取失败：这不是有效的拼图模板配置");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+        }
+
+        // GSAP 动画初始化
+        window.addEventListener('load', () => {
+            gsap.to(".panel-card", {
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: "power2.out"
+            });
+        });
+
+    </script>
+</body>
+</html>

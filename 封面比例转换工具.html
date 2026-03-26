@@ -1,0 +1,1590 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>封面比例转换工具 · 竖版转16:9专业版</title>
+    <!-- 引入文件保存所需 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      /* ==================== 基础重置 ==================== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0d0f14;
+        --surface: #161a24;
+        --card: #1e2333;
+        --border: #2c3347;
+        --accent: #5b8dee;
+        --accent2: #a78bfa;
+        --text: #e2e8f0;
+        --sub: #7a859e;
+        --green: #34d399;
+        --radius: 12px;
+        --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      }
+      body {
+        font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+        background: #05070a;
+        color: var(--text);
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ==================== 头部 ==================== */
+      header {
+        text-align: center;
+        padding: 24px 16px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 {
+        font-size: 1.5rem;
+        letter-spacing: -0.05em;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        white-space: nowrap;
+        word-break: keep-all;
+      }
+
+      /* ==================== 主体双栏布局 ==================== */
+      .main-container {
+        display: flex;
+        flex-wrap: nowrap;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px;
+        gap: 32px;
+        width: 100%;
+        height: calc(100vh - 100px); /* 减去页头，填满屏幕 */
+        box-sizing: border-box;
+      }
+
+      /* ==================== 左侧预览区 ==================== */
+      .left-col {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+      }
+      .preview-header {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      #main-preview-box {
+        width: 100%;
+        flex: 1;
+        background: #000;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        box-shadow: var(--shadow);
+        min-height: 0;
+      }
+      #main-canvas {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: none;
+      }
+      .placeholder-text {
+        color: var(--sub);
+        font-size: 0.9rem;
+      }
+
+      /* ==================== 右侧面板区 ==================== */
+      .right-col {
+        width: 380px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 8px;
+        scroll-behavior: smooth;
+      }
+      .right-col::-webkit-scrollbar { width: 6px; }
+      .right-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+      /* ==================== 拖拽上传模块 ==================== */
+      #drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        padding: 32px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      #drop-zone:hover,
+      #drop-zone.hover {
+        border-color: var(--accent);
+        background: #1a2035;
+      }
+      #drop-zone svg {
+        opacity: 0.5;
+        width: 36px;
+        height: 36px;
+      }
+      .dz-label {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .dz-sub {
+        font-size: 0.75rem;
+        color: var(--sub);
+      }
+      #file-input {
+        display: none;
+      }
+
+      /* ==================== 分组设置卡片 ==================== */
+      .panel-card {
+        background: var(--surface-glass);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      .panel-title {
+        font-size: 0.85rem;
+        color: var(--accent);
+        font-weight: 600;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+        margin-bottom: 4px;
+      }
+
+      /* 控件行 */
+      .control-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .control-row label {
+        font-size: 0.8rem;
+        color: var(--sub);
+        display: flex;
+        justify-content: space-between;
+      }
+      .range-val {
+        color: var(--text);
+      }
+
+      select,
+      input[type="range"] {
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        padding: 8px;
+        font-size: 0.85rem;
+        outline: none;
+      }
+      input[type="range"] {
+        padding: 0;
+        height: 4px;
+        accent-color: var(--accent);
+      }
+
+      /* ==================== 背景模式 Radio ==================== */
+      .radio-group {
+        display: flex;
+        background: var(--card);
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .radio-label {
+        flex: 1;
+        text-align: center;
+        padding: 8px 0;
+        font-size: 0.8rem;
+        color: var(--sub);
+        cursor: pointer;
+        border-right: 1px solid var(--border);
+        transition: 0.2s;
+      }
+      .radio-label:last-child {
+        border-right: none;
+      }
+      .radio-label:hover {
+        background: #242a3e;
+      }
+      .radio-label.active {
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .radio-input {
+        display: none;
+      }
+
+      /* 子视图切换 */
+      .bg-sub-view, .layout-sub-view {
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .bg-sub-view.active, .layout-sub-view.active {
+        display: flex;
+      }
+
+      /* 自定义文字输入 */
+      .text-input-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .text-input-row input[type="text"] {
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        padding: 8px;
+        font-size: 0.85rem;
+        outline: none;
+      }
+
+      /* 自定义底图 */
+      .bg-upload-inner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #bg-upload-btn, #wm-upload-btn {
+        flex: 1;
+        padding: 6px;
+        font-size: 0.8rem;
+        background: var(--card);
+        border: 1px dashed var(--border);
+        color: var(--sub);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #bg-clear-btn, #wm-clear-btn {
+        display: none;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        background: #3b1515;
+        border: 1px solid #5c2020;
+        color: #f87171;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #bg-clear-btn.visible, #wm-clear-btn.visible {
+        display: block;
+      }
+
+      /* 纯色选取 */
+      .color-picker-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      #solid-color-input {
+        width: 40px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+        background: transparent;
+      }
+
+      .btn:active, .radio-label:active, .style-btn:active, #drop-zone:active {
+        transform: scale(0.98);
+      }
+
+      /* ==================== 底部队列区域 ==================== */
+      .queue-section {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 24px 60px;
+        width: 100%;
+        display: none;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .queue-section.visible {
+        display: flex;
+      }
+      .queue-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+      .btn-danger {
+        background: transparent;
+        border: 1px solid #5c2020;
+        color: #f87171;
+      }
+      .btn-danger:hover {
+        background: #3b1515;
+      }
+
+      #preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+      }
+      .grid-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+      .grid-card img {
+        width: 100%;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        display: block;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+      }
+      .grid-card-info {
+        padding: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .grid-card-name {
+        font-size: 0.75rem;
+        color: var(--sub);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+      }
+      .del-btn {
+        background: #3b1515;
+        color: #f87171;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        cursor: pointer;
+      }
+
+      /* ==================== 全屏拖拽遮罩 ==================== */
+      #drag-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(13, 15, 20, 0.85);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+        color: var(--accent2);
+        font-size: 2rem;
+        font-weight: bold;
+        pointer-events: none;
+        border: 4px dashed var(--accent2);
+        margin: 16px;
+        border-radius: 20px;
+      }
+      #drag-overlay.visible {
+        display: flex;
+      }
+
+      /* ==================== 全局状态浮层 ==================== */
+      #loading-toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1a2035;
+        color: #fff;
+        padding: 10px 24px;
+        border-radius: 99px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: none;
+        z-index: 1000;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--accent);
+      }
+
+      /* 底部署名 */
+      footer {
+        text-align: center;
+        font-size: 0.75rem;
+        color: #3a4358;
+        padding-bottom: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 拖拽全局高亮提示 -->
+    <div id="drag-overlay">
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      松开鼠标立即处理图片
+    </div>
+
+    <div id="loading-toast">正在处理...</div>
+
+    <script>
+      // === IndexedDB 联动 Bridge ===
+      const BridgeDB = {
+        name: 'ZhiRenDaShu_Bridge',
+        store: 'image_transfer',
+        async save(images) {
+          const db = await this.open();
+          const tx = db.transaction(this.store, 'readwrite');
+          const s = tx.objectStore(this.store);
+          await s.clear();
+          for (const img of images) {
+            await s.add(img);
+          }
+        },
+        async load() {
+          const db = await this.open();
+          return new Promise((res) => {
+            const tx = db.transaction(this.store, 'readonly');
+            const s = tx.objectStore(this.store);
+            const req = s.getAll();
+            req.onsuccess = () => {
+              s.clear(); // 取出后清空缓存
+              res(req.result);
+            };
+          });
+        },
+        open() {
+          return new Promise((res) => {
+            const req = indexedDB.open(this.name, 1);
+            req.onupgradeneeded = () => req.result.createObjectStore(this.store, { autoIncrement: true });
+            req.onsuccess = () => res(req.result);
+          });
+        }
+      };
+    </script>
+
+    <header>
+      <div style="position: absolute; left: 24px; top: 24px;">
+        <a href="index.html" style="color: var(--sub); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          返回门户
+        </a>
+      </div>
+      <h1>封面比例转换工具</h1>
+    </header>
+
+    <main class="main-container">
+      <!-- 左侧预览区 -->
+      <div class="left-col">
+        <div class="preview-header">
+          <span>实时大预览</span>
+          <span
+            style="font-size: 0.8rem; color: var(--sub); font-weight: normal"
+            id="preview-info"
+            >当前未载入图片</span
+          >
+        </div>
+        <div id="main-preview-box">
+          <canvas id="main-canvas"></canvas>
+          <div class="placeholder-text" id="preview-placeholder">
+            载入图片以开始艺术转换
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧面板区 -->
+      <div class="right-col">
+        <!-- 拖拽区 -->
+        <div id="drop-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <div class="dz-label">载入原始影像</div>
+          <div class="dz-sub">支持批量拖拽</div>
+          <input type="file" id="file-input" accept="image/*" multiple />
+        </div>
+
+        <!-- 排版模式 -->
+        <div class="panel-card">
+          <div class="panel-title">排版模式</div>
+          <div class="radio-group" id="layout-mode-group">
+            <div class="radio-label active" data-mode="classic">经典 16:9</div>
+            <div class="radio-label" data-mode="xhs">竖屏 3:4</div>
+            <div class="radio-label" title="自带复古底色+文字" data-mode="polaroid">拍立得</div>
+            <div class="radio-label" title="队列图片纵向平铺" data-mode="long">长图平铺</div>
+          </div>
+          
+          <!-- 子视图：拍立得设置 -->
+          <div class="layout-sub-view" id="view-layout-polaroid">
+             <div class="color-picker-row">
+              <label style="flex: 1">相纸底色：</label>
+              <input type="color" id="polaroid-color-input" value="#f8f9fa" />
+            </div>
+            <div class="text-input-row">
+              <label>底部印字内容 (留空不印)</label>
+              <input type="text" id="polaroid-text" placeholder="例如：2026 影像纪实" />
+            </div>
+            <div class="color-picker-row mt-2" style="margin-top:8px">
+              <label style="flex: 1">文字颜色：</label>
+              <input type="color" id="polaroid-text-color" value="#333333" />
+            </div>
+          </div>
+
+          <!-- 子视图：长图平铺设置 -->
+          <div class="layout-sub-view" id="view-layout-long">
+            <div class="control-row">
+              <label><span>图与图间距 (Padding)</span><span class="range-val" id="long-gap-val">0px</span></label>
+              <input type="range" id="long-gap-amount" min="0" max="100" value="0" step="2" />
+            </div>
+            <div class="color-picker-row" style="margin-top:8px">
+              <label style="flex: 1">背景填充色：</label>
+              <input type="color" id="long-bg-color" value="#ffffff" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 输出设置 -->
+        <div class="panel-card" id="output-settings-panel">
+          <div class="panel-title">输出质量</div>
+          <div class="control-row" id="out-width-row">
+            <label><span>输出基准宽度</span></label>
+            <select id="out-width">
+              <option value="1920" selected>1920px (超清)</option>
+              <option value="2560">2560px (2K)</option>
+              <option value="3840">3840px (4K)</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label><span>输出格式</span></label>
+            <select id="out-format">
+              <option value="image/jpeg" selected>JPEG (高画质)</option>
+              <option value="image/png">PNG (无损)</option>
+              <option value="image/webp">WebP (推荐)</option>
+              <option value="image/tiff">TIFF (印刷级)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 背景模式 -->
+        <div class="panel-card">
+          <div class="panel-title">背景设置</div>
+          <!-- 标签切换 -->
+          <div class="radio-group" id="bg-mode-group">
+            <div class="radio-label active" data-mode="blur">自动模糊</div>
+            <div class="radio-label" data-mode="custom">自定义</div>
+            <div class="radio-label" data-mode="solid">纯色填充</div>
+          </div>
+
+          <!-- 子面板：自动模糊 -->
+          <div class="bg-sub-view active" id="view-blur">
+            <div class="control-row">
+              <label
+                ><span>模糊强度</span
+                ><span class="range-val" id="blur-val">24</span></label
+              >
+              <input
+                type="range"
+                id="blur-amount"
+                min="4"
+                max="60"
+                value="24"
+                step="2"
+              />
+            </div>
+            <div class="control-row">
+              <label
+                ><span>背景暗化</span
+                ><span class="range-val" id="dark-val">35%</span></label
+              >
+              <input
+                type="range"
+                id="dark-amount"
+                min="0"
+                max="80"
+                value="35"
+                step="5"
+              />
+            </div>
+          </div>
+
+          <!-- 子面板：自定义底图 -->
+          <div class="bg-sub-view" id="view-custom">
+            <div class="bg-upload-inner">
+              <button id="bg-upload-btn">上传自定义背景</button>
+              <button id="bg-clear-btn" title="清除">移除</button>
+              <input
+                type="file"
+                id="bg-file-input"
+                accept="image/*"
+                style="display: none"
+              />
+            </div>
+          </div>
+
+          <!-- 子面板：纯色填充 -->
+          <div class="bg-sub-view" id="view-solid">
+            <div class="color-picker-row">
+              <label style="flex: 1">背景颜色：</label>
+              <input type="color" id="solid-color-input" value="#161a24" />
+            </div>
+          </div>
+        </div>
+          <!-- 水印设置 -->
+        <div class="panel-card">
+          <div class="panel-title">水印映射</div>
+          <div class="bg-upload-inner">
+            <button id="wm-upload-btn">上传品牌水印</button>
+            <button id="wm-clear-btn" title="清除">移除</button>
+            <input
+              type="file"
+              id="wm-file-input"
+              accept="image/*"
+              style="display: none"
+            />
+          </div>
+          <div
+            class="control-row"
+            id="wm-settings"
+            style="display: none; margin-top: 12px"
+          >
+            <label><span>对齐图层基准 (解决位置变动)</span></label>
+            <select id="wm-reference">
+              <option value="image" selected>绑定居中原图 (推荐，随原图移动)</option>
+              <option value="canvas">绑定整体画幅 (固定在背景角落)</option>
+            </select>
+            <label style="margin-top: 8px"><span>水印靠边位置</span></label>
+            <select id="wm-position">
+              <option value="bottom-right">右下角</option>
+              <option value="bottom-left" selected>左下角</option>
+              <option value="top-right">右上角</option>
+              <option value="top-left">左上角</option>
+              <option value="center">中部居中</option>
+            </select>
+            <label style="margin-top: 8px"
+              ><span>缩放比例</span
+              ><span class="range-val" id="wm-scale-val">20%</span></label
+            >
+            <input
+              type="range"
+              id="wm-scale"
+              min="5"
+              max="100"
+              value="20"
+              step="1"
+            />
+            
+            <div style="display: flex; gap: 12px; margin-top: 8px;">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                 <label><span>横向微调 (X)</span><span class="range-val" id="wm-dx-val">0</span></label>
+                 <input type="range" id="wm-dx" min="-50" max="50" value="0" step="1" />
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                 <label><span>纵向微调 (Y)</span><span class="range-val" id="wm-dy-val">0</span></label>
+                 <input type="range" id="wm-dy" min="-50" max="50" value="0" step="1" />
+              </div>
+            </div>
+
+            <label style="margin-top: 8px"
+              ><span>不透明度</span
+              ><span class="range-val" id="wm-opacity-val">100%</span></label
+            >
+            <input
+              type="range"
+              id="wm-opacity"
+              min="0"
+              max="100"
+              value="100"
+              step="1"
+            />
+          </div>
+        </div>
+
+        <!-- 图像排版 -->
+        <div class="panel-card">
+          <div class="panel-title">原图排版</div>
+          <div class="control-row">
+            <label
+              ><span>缩放比例</span
+              ><span class="range-val" id="scale-val">100%</span></label
+            >
+            <input
+              type="range"
+              id="scale-amount"
+              min="50"
+              max="100"
+              value="100"
+              step="1"
+            />
+          </div>
+          <div class="control-row">
+            <label
+              ><span>垂直位置 (0顶部, 50居中, 100底部)</span
+              ><span class="range-val" id="posy-val">50%</span></label
+            >
+            <input
+              type="range"
+              id="posy-amount"
+              min="0"
+              max="100"
+              value="50"
+              step="1"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 批量列表区域 -->
+    <section class="queue-section" id="queue-section">
+      <div class="queue-header">
+        <h2 style="font-size: 1.1rem" id="queue-title">已载入 0 张图片</h2>
+        <div style="display: flex; gap: 12px">
+          <button class="btn btn-danger" id="clear-btn">重置</button>
+          <button class="btn btn-primary" id="transfer-btn" style="background: linear-gradient(135deg, #ff4d64, #ff2442);">
+            传送至拼图
+          </button>
+          <button class="btn btn-primary" id="refine-btn" style="background: linear-gradient(135deg, #ff2442, #ff7e5f);">
+            传送至精修
+          </button>
+          <button class="btn btn-primary" id="download-btn">
+            全量保存
+          </button>
+        </div>
+      </div>
+      <div id="preview-grid"></div>
+    </section>
+
+    <footer>
+      作者：植人大树 &nbsp;|&nbsp;
+      <a
+        href="https://link3.cc/zhirendashu"
+        target="_blank"
+        style="color: inherit; text-decoration: none"
+        >link3.cc/zhirendashu</a
+      >
+      &nbsp;|&nbsp; CC BY-NC-SA 4.0
+    </footer>
+
+    <script>
+      /**
+       * 作者：植人大树
+       * 个人主页：https://link3.cc/zhirendashu
+       * 版本：v2.0.0
+       * 发布日期：2026-03-01
+       * 开源协议：CC BY-NC-SA 4.0
+       */
+      const __AUTH_SIGNATURE = "179689535&0814";
+
+      // ==================== 全局状态 ====================
+      // 图片对象列表 [{ id, img, name, finalCanvas }]
+      let imageList = [];
+      let activeIndex = 0; // 左侧显示哪张图
+      let customBgImg = null;
+      let watermarkImg = null; // 水印图片对象
+      let bgMode = "blur"; // blur | custom | solid
+      let layoutMode = "classic"; // classic | xhs | polaroid | long
+      let counterId = 0; // 自增 ID 保证唯一
+
+      let renderTimeout = null; // 防抖句柄
+
+      // ==================== DOM元素 ====================
+      const canvasDom = document.getElementById("main-canvas");
+      const ctx = canvasDom.getContext("2d");
+      const placeholder = document.getElementById("preview-placeholder");
+      const previewInfo = document.getElementById("preview-info");
+      const grid = document.getElementById("preview-grid");
+
+      // 控件
+      const ctrlW = document.getElementById("out-width");
+      const ctrlFmt = document.getElementById("out-format");
+
+      const ctrlBlur = document.getElementById("blur-amount");
+      const valBlur = document.getElementById("blur-val");
+      const ctrlDark = document.getElementById("dark-amount");
+      const valDark = document.getElementById("dark-val");
+
+      const ctrlScale = document.getElementById("scale-amount");
+      const valScale = document.getElementById("scale-val");
+      const ctrlPosY = document.getElementById("posy-amount");
+      const valPosY = document.getElementById("posy-val");
+      const ctrlColor = document.getElementById("solid-color-input");
+
+      // 水印组件
+      const wmUploadBtn = document.getElementById("wm-upload-btn");
+      const wmClearBtn = document.getElementById("wm-clear-btn");
+      const wmFileInput = document.getElementById("wm-file-input");
+      const wmSettings = document.getElementById("wm-settings");
+      
+      const ctrlWmRef = document.getElementById("wm-reference");
+      const ctrlWmPos = document.getElementById("wm-position");
+      const ctrlWmScale = document.getElementById("wm-scale");
+      const valWmScale = document.getElementById("wm-scale-val");
+      const ctrlWmOpacity = document.getElementById("wm-opacity");
+      const valWmOpacity = document.getElementById("wm-opacity-val");
+
+      const ctrlWmDx = document.getElementById("wm-dx");
+      const valWmDx = document.getElementById("wm-dx-val");
+      const ctrlWmDy = document.getElementById("wm-dy");
+      const valWmDy = document.getElementById("wm-dy-val");
+
+      // 新增：排版模式相关控件
+      const ctrlPolaroidColor = document.getElementById("polaroid-color-input");
+      const ctrlPolaroidText = document.getElementById("polaroid-text");
+      const ctrlPolaroidTextColor = document.getElementById("polaroid-text-color");
+      const ctrlLongGap = document.getElementById("long-gap-amount");
+      const valLongGap = document.getElementById("long-gap-val");
+      const ctrlLongBg = document.getElementById("long-bg-color");
+
+      // 组件
+      const dragOverlay = document.getElementById("drag-overlay");
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const loading = document.getElementById("loading-toast");
+      const transferBtn = document.getElementById("transfer-btn");
+      const refineBtn = document.getElementById("refine-btn");
+
+      // 生命周期：检查是否有来自拼图工具的联动数据
+      window.addEventListener('DOMContentLoaded', async () => {
+        const data = await BridgeDB.load();
+        if (data && data.length > 0) {
+          showLoading("正在从拼图大师接收数据...");
+          const items = [];
+          for (const item of data) {
+             const img = new Image();
+             await new Promise(res => {
+               img.onload = res;
+               img.src = URL.createObjectURL(item.blob);
+             });
+             counterId++;
+             items.push({ id: counterId, img, name: item.name, finalCanvas: null });
+          }
+          imageList.push(...items);
+          rebuildAllAndRefreshUI();
+        }
+      });
+
+      // 1. 防抖渲染触发器（绑定给所有范围滑块和下拉控制）
+      const inputsToWatch = [
+        ctrlW, ctrlBlur, ctrlDark, ctrlScale, ctrlPosY, ctrlColor,
+        ctrlWmRef, ctrlWmPos, ctrlWmScale, ctrlWmOpacity, ctrlWmDx, ctrlWmDy,
+        ctrlPolaroidColor, ctrlPolaroidText, ctrlPolaroidTextColor, ctrlLongGap, ctrlLongBg
+      ];
+      inputsToWatch.forEach((el) => {
+        el.addEventListener("input", () => {
+          // 同步文本显示
+          if (el === ctrlBlur) valBlur.textContent = el.value;
+          if (el === ctrlDark) valDark.textContent = el.value + "%";
+          if (el === ctrlScale) valScale.textContent = el.value + "%";
+          if (el === ctrlPosY) valPosY.textContent = el.value + "%";
+          if (el === ctrlWmScale) valWmScale.textContent = el.value + "%";
+          if (el === ctrlWmOpacity) valWmOpacity.textContent = el.value + "%";
+          if (el === ctrlWmDx) valWmDx.textContent = el.value;
+          if (el === ctrlWmDy) valWmDy.textContent = el.value;
+          if (el === ctrlLongGap) valLongGap.textContent = el.value + "px";
+
+          triggerRender();
+        });
+      });
+
+      // 2. 背景模式切换
+      document.querySelectorAll("#bg-mode-group .radio-label").forEach((lbl) => {
+        lbl.addEventListener("click", () => {
+          document
+            .querySelectorAll("#bg-mode-group .radio-label")
+            .forEach((n) => n.classList.remove("active"));
+          lbl.classList.add("active");
+          bgMode = lbl.dataset.mode;
+
+          document
+            .querySelectorAll(".bg-sub-view")
+            .forEach((v) => v.classList.remove("active"));
+          document.getElementById("view-" + bgMode).classList.add("active");
+
+          triggerRender();
+        });
+      });
+
+      // 2.5 排版模式切换
+      document.querySelectorAll("#layout-mode-group .radio-label").forEach((lbl) => {
+        lbl.addEventListener("click", () => {
+          document
+            .querySelectorAll("#layout-mode-group .radio-label")
+            .forEach((n) => n.classList.remove("active"));
+          lbl.classList.add("active");
+          layoutMode = lbl.dataset.mode;
+
+          document
+            .querySelectorAll(".layout-sub-view")
+            .forEach((v) => v.classList.remove("active"));
+            
+          const subView = document.getElementById("view-layout-" + layoutMode);
+          if (subView) subView.classList.add("active");
+
+          // 细节控制：长图模式隐藏无关控件
+          const bgPanel = document.getElementById("bg-mode-group").parentElement;
+          const posRow = ctrlPosY.parentElement;
+          
+          if (layoutMode === "long") {
+             bgPanel.style.display = 'none';
+             posRow.style.display = 'none';
+          } else if (layoutMode === "polaroid") {
+             bgPanel.style.display = 'none';
+             posRow.style.display = 'flex';
+          } else {
+             bgPanel.style.display = 'flex';
+             posRow.style.display = 'flex';
+          }
+
+          triggerRender();
+        });
+      });
+
+      // 3. 自定义底图上传
+      document
+        .getElementById("bg-upload-btn")
+        .addEventListener("click", () =>
+          document.getElementById("bg-file-input").click(),
+        );
+      document
+        .getElementById("bg-file-input")
+        .addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+              customBgImg = img;
+              document.getElementById("bg-upload-btn").textContent =
+                "✓ 已选择：" + file.name;
+              document.getElementById("bg-clear-btn").classList.add("visible");
+              // 若当前是 custom 模式，立刻重绘
+              if (bgMode === "custom") triggerRender();
+            };
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+          e.target.value = "";
+        });
+      document.getElementById("bg-clear-btn").addEventListener("click", () => {
+        customBgImg = null;
+        document.getElementById("bg-upload-btn").textContent =
+          "➕ 点击上传背景底图";
+        document.getElementById("bg-clear-btn").classList.remove("visible");
+        if (bgMode === "custom") triggerRender();
+      });
+
+      // 3.5. 水印上传
+      wmUploadBtn.addEventListener("click", () => wmFileInput.click());
+      wmFileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            watermarkImg = img;
+            wmUploadBtn.textContent = "✓ 已加载水印：" + file.name;
+            wmClearBtn.classList.add("visible");
+            wmSettings.style.display = "flex";
+            triggerRender();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+      });
+      wmClearBtn.addEventListener("click", () => {
+        watermarkImg = null;
+        wmUploadBtn.textContent = "➕ 点击上传水印图片";
+        wmClearBtn.classList.remove("visible");
+        wmSettings.style.display = "none";
+        triggerRender();
+      });
+
+      // 4. 全局拖拽响应 (防闪烁技巧：监听 window 的 dragenter/dragleave 判断)
+      let dragCounter = 0;
+      window.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragCounter++;
+        if (dragCounter === 1) dragOverlay.classList.add("visible");
+      });
+      window.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter === 0) dragOverlay.classList.remove("visible");
+      });
+      window.addEventListener("dragover", (e) => e.preventDefault());
+      window.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        dragOverlay.classList.remove("visible");
+        handleFiles([...e.dataTransfer.files]);
+      });
+      dropZone.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", (e) => {
+        handleFiles([...e.target.files]);
+        e.target.value = "";
+      });
+
+      // 5. ZIP 下载和清空功能
+      document.getElementById("clear-btn").addEventListener("click", () => {
+        imageList = [];
+        activeIndex = 0;
+        renderQueue();
+        updateMainPreview();
+      });
+      document
+        .getElementById("download-btn")
+        .addEventListener("click", downloadAll);
+      
+      transferBtn.addEventListener("click", async () => {
+        if (!imageList.length) return;
+        showLoading("正在打包传送...");
+        const dataToSave = [];
+        for (const item of imageList) {
+          const blob = await new Promise(res => item.finalCanvas.toBlob(res, 'image/png'));
+          dataToSave.push({ name: item.name, blob });
+        }
+        await BridgeDB.save(dataToSave);
+        window.location.href = "小红书拼图工具.html?from=bridge";
+      });
+
+      refineBtn.addEventListener("click", async () => {
+        if (!imageList.length) return;
+        showLoading("正在准备精修素材...");
+        const item = imageList[activeIndex]; 
+        const blob = await new Promise(res => item.finalCanvas.toBlob(res, 'image/png'));
+        await BridgeDB.save([{ name: item.name, blob }]);
+        window.location.href = "封面精修大师.html?from=bridge";
+      });
+
+      // ==================== 核心处理逻辑 ====================
+
+      function handleFiles(files) {
+        const imgs = files.filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return;
+
+        showLoading("加载图片中...");
+        let loaded = 0;
+        const newItems = [];
+
+        imgs.forEach((file) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              counterId++;
+              newItems.push({
+                id: counterId,
+                img,
+                name: file.name,
+                finalCanvas: null,
+              });
+              loaded++;
+              if (loaded === imgs.length) {
+                imageList.push(...newItems);
+                activeIndex = imageList.length - newItems.length; // 焦点跳到新加的第一张
+                rebuildAllAndRefreshUI();
+              }
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function triggerRender(delay = 300) {
+        if (!imageList.length) return;
+        clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+          rebuildAllAndRefreshUI();
+        }, delay);
+      }
+
+      async function rebuildAllAndRefreshUI() {
+        showLoading("正在渲染...");
+        // 重新处理所有图片的 Canvas 画布
+        for (let i = 0; i < imageList.length; i++) {
+          const item = imageList[i];
+          item.finalCanvas = buildCanvasCore(item.img);
+          // 留出时间渲染 UI 防止卡死
+          await new Promise((res) => setTimeout(res, 0));
+        }
+
+        if (activeIndex >= imageList.length)
+          activeIndex = Math.max(0, imageList.length - 1);
+
+        renderQueue();
+        updateMainPreview();
+        hideLoading();
+      }
+
+      // 获取控件数值
+      function getParams() {
+        return {
+          outW: parseInt(ctrlW.value),
+          blur: parseInt(ctrlBlur.value),
+          dark: parseInt(ctrlDark.value) / 100,
+          scale: parseInt(ctrlScale.value) / 100,
+          posY: parseInt(ctrlPosY.value) / 100,
+          color: ctrlColor.value,
+          wmRef: ctrlWmRef.value,
+          wmPos: ctrlWmPos.value,
+          wmScale: parseInt(ctrlWmScale.value) / 100,
+          wmOpacity: parseInt(ctrlWmOpacity.value) / 100,
+          wmDx: parseInt(ctrlWmDx.value) / 100,
+          wmDy: parseInt(ctrlWmDy.value) / 100,
+          // 新增排版参数
+          polaroidColor: ctrlPolaroidColor.value,
+          polaroidText: ctrlPolaroidText.value.trim(),
+          polaroidTextColor: ctrlPolaroidTextColor.value,
+          longGap: parseInt(ctrlLongGap.value),
+          longBgColor: ctrlLongBg.value
+        };
+      }
+
+      function buildCanvasCore(img) {
+        const p = getParams();
+        let outH;
+
+        // 决定最终画布宽高
+        if (layoutMode === "classic") {
+           outH = Math.round((p.outW * 9) / 16);
+        } else if (layoutMode === "xhs" || layoutMode === "polaroid") {
+           outH = Math.round((p.outW * 4) / 3);
+        } else if (layoutMode === "long") {
+           // 长图模式由专用合成函数处理，这里为单个图片提供一个等比画布
+           outH = Math.round(p.outW / (img.width / img.height));
+        }
+
+        const cvs = document.createElement("canvas");
+        cvs.width = p.outW;
+        cvs.height = outH;
+        const cx = cvs.getContext("2d");
+
+        // ======= 1. 背景绘制层 =======
+        if (layoutMode === "polaroid") {
+           // 拍立得固定底色
+           cx.fillStyle = p.polaroidColor;
+           cx.fillRect(0, 0, p.outW, outH);
+        } else if (layoutMode === "long") {
+           // 长图底板色
+           cx.fillStyle = p.longBgColor;
+           cx.fillRect(0, 0, p.outW, outH);
+        } else {
+            // 普通与小红书模式使用原有背景逻辑
+            if (bgMode === "solid") {
+              cx.fillStyle = p.color;
+              cx.fillRect(0, 0, p.outW, outH);
+            } else {
+              // blur 或 custom
+              const src = bgMode === "custom" && customBgImg ? customBgImg : img;
+              const bgAsp = src.width / src.height;
+              const canvAsp = p.outW / outH;
+              let bw, bh;
+              if (bgAsp > canvAsp) {
+                bh = outH;
+                bw = outH * bgAsp;
+              } else {
+                bw = p.outW;
+                bh = p.outW / bgAsp;
+              }
+              const bx = (p.outW - bw) / 2;
+              const by = (outH - bh) / 2;
+
+              if (bgMode === "blur" && p.blur > 0) {
+                cx.filter = `blur(${p.blur}px)`;
+                cx.drawImage(
+                  src,
+                  bx - p.blur * 2,
+                  by - p.blur * 2,
+                  bw + p.blur * 4,
+                  bh + p.blur * 4,
+                );
+                cx.filter = "none";
+              } else {
+                cx.drawImage(src, bx, by, bw, bh);
+              }
+
+              if (p.dark > 0) {
+                cx.fillStyle = `rgba(0,0,0,${p.dark})`;
+                cx.fillRect(0, 0, p.outW, outH);
+              }
+            }
+        }
+
+        // ======= 2. 原图绘制层 =======
+        const imgAsp = img.width / img.height;
+        let fw, fh, fx, fy;
+
+        if (layoutMode === "polaroid") {
+            // 拍立得图片内边距算法：左右上留 4%，下部留 22% 写字
+            const padX = p.outW * 0.04;
+            const padTop = p.outW * 0.04;
+            const padBottom = outH * 0.22;
+            const maxW = p.outW - padX * 2;
+            const maxH = outH - padTop - padBottom;
+            
+            // 加入用户 scale 控制
+            const baseW = maxW * p.scale;
+            const baseH = maxH * p.scale;
+
+            if (imgAsp > (baseW / baseH)) {
+               fw = baseW;
+               fh = baseW / imgAsp;
+            } else {
+               fh = baseH;
+               fw = baseH * imgAsp;
+            }
+
+            fx = (p.outW - fw) / 2;
+            fy = padTop + (maxH - fh) * p.posY;
+            cx.drawImage(img, fx, fy, fw, fh);
+
+            // 绘制相框边框阴影感
+            cx.strokeStyle = "rgba(0,0,0,0.05)";
+            cx.lineWidth = 2;
+            cx.strokeRect(fx, fy, fw, fh);
+            
+            // 绘制文字
+            if (p.polaroidText) {
+                cx.fillStyle = p.polaroidTextColor;
+                cx.textAlign = "center";
+                cx.textBaseline = "middle";
+                const fontSize = Math.floor(outH * 0.04);
+                cx.font = `500 ${fontSize}px "Inter", "PingFang SC", sans-serif`;
+                cx.fillText(p.polaroidText, p.outW / 2, outH - (padBottom / 2));
+            }
+
+        } else if (layoutMode === "long") {
+            // 长图单张充满渲染
+            fw = p.outW;
+            fh = p.outW / imgAsp;
+            cx.drawImage(img, 0, 0, fw, fh);
+        } else {
+            // 经典留白模式（包含横版 / 小红书3:4）
+            fh = outH * p.scale * 0.88;
+            fw = fh * imgAsp;
+            if (fw > p.outW) {
+              fw = p.outW * p.scale;
+              fh = fw / imgAsp;
+            }
+
+            fx = (p.outW - fw) / 2;
+            fy = Math.max(0, outH - fh) * p.posY;
+            cx.drawImage(img, fx, fy, fw, fh);
+        }
+
+        // ======= 3. 绘制水印 =======
+        if (watermarkImg) {
+          cx.globalAlpha = p.wmOpacity;
+          
+          let refX, refY, refW, refH;
+          if (p.wmRef === "image") {
+            // 对于长图，贴紧图片
+            if (layoutMode === "long") {
+                refX = 0; refY = 0; refW = p.outW; refH = p.outW / imgAsp;
+            } else {
+                refX = fx; refY = fy; refW = fw; refH = fh;
+            }
+          } else {
+            refX = 0; refY = 0; refW = p.outW; refH = outH;
+          }
+
+          const baseWmWidth = p.outW * p.wmScale;
+          const wmAsp = watermarkImg.width / watermarkImg.height;
+          const wmWidth = baseWmWidth;
+          const wmHeight = baseWmWidth / wmAsp;
+
+          const padding = Math.min(p.outW, outH) * 0.03;
+
+          let wx = 0,
+            wy = 0;
+          switch (p.wmPos) {
+            case "top-left":
+              wx = refX + padding;
+              wy = refY + padding;
+              break;
+            case "top-right":
+              wx = refX + refW - wmWidth - padding;
+              wy = refY + padding;
+              break;
+            case "bottom-left":
+              wx = refX + padding;
+              wy = refY + refH - wmHeight - padding;
+              break;
+            case "bottom-right":
+              wx = refX + refW - wmWidth - padding;
+              wy = refY + refH - wmHeight - padding;
+              break;
+            case "center":
+              wx = refX + (refW - wmWidth) / 2;
+              wy = refY + (refH - wmHeight) / 2;
+              break;
+          }
+          
+          wx += p.outW * p.wmDx;
+          wy += outH * p.wmDy; // 修复原本用 p.outH 的 bug，改用动态 outH
+
+          cx.drawImage(watermarkImg, wx, wy, wmWidth, wmHeight);
+          cx.globalAlpha = 1.0;
+        }
+
+        return cvs;
+      }
+
+      // 全局缓存保存长图画布结果
+      let cachedLongCanvas = null;
+
+      function updateMainPreview() {
+        if (!imageList.length) {
+          canvasDom.style.display = "none";
+          placeholder.style.display = "block";
+          previewInfo.textContent = "当前未载入图片";
+          return;
+        }
+        canvasDom.style.display = "block";
+        placeholder.style.display = "none";
+
+        if (layoutMode === "long") {
+           // 长图模式下，将所有列表中的图片从上到下绘制在一张大画布上
+           const p = getParams();
+           let totalHeight = 0;
+           imageList.forEach((item, idx) => {
+               totalHeight += item.finalCanvas.height;
+               if (idx < imageList.length - 1) totalHeight += p.longGap;
+           });
+
+           const longCvs = document.createElement("canvas");
+           longCvs.width = p.outW;
+           longCvs.height = totalHeight;
+           const cx = longCvs.getContext("2d");
+           
+           // 画长图底色
+           cx.fillStyle = p.longBgColor;
+           cx.fillRect(0, 0, longCvs.width, longCvs.height);
+
+           let currentY = 0;
+           imageList.forEach((item, idx) => {
+               cx.drawImage(item.finalCanvas, 0, currentY);
+               currentY += item.finalCanvas.height;
+               if (idx < imageList.length - 1) currentY += p.longGap;
+           });
+
+           cachedLongCanvas = longCvs; // 保存给下载用
+           previewInfo.textContent = `预览长图拼接共 ${imageList.length} 张`;
+
+           canvasDom.width = longCvs.width;
+           canvasDom.height = longCvs.height;
+           ctx.clearRect(0, 0, canvasDom.width, canvasDom.height);
+           ctx.drawImage(longCvs, 0, 0);
+
+        } else {
+            const item = imageList[activeIndex];
+            previewInfo.textContent = `预览第 ${activeIndex + 1} 张 (${item.name})`;
+
+            canvasDom.width = item.finalCanvas.width;
+            canvasDom.height = item.finalCanvas.height;
+            ctx.clearRect(0, 0, canvasDom.width, canvasDom.height);
+            ctx.drawImage(item.finalCanvas, 0, 0);
+        }
+      }
+
+      function renderQueue() {
+        grid.innerHTML = "";
+        const qs = document.getElementById("queue-section");
+        document.getElementById("queue-title").textContent =
+          `已载入 ${imageList.length} 张图片`;
+
+        if (imageList.length === 0) {
+          qs.classList.remove("visible");
+          return;
+        }
+        qs.classList.add("visible");
+
+        imageList.forEach((item, index) => {
+          const cView = document.createElement("canvas");
+          // 将高清晰画布缩放到预览图以减少内存 DOM
+          cView.width = 320;
+          cView.height = 180;
+          cView.getContext("2d").drawImage(item.finalCanvas, 0, 0, 320, 180);
+
+          const srcDataUrl = cView.toDataURL("image/jpeg", 0.6);
+
+          const card = document.createElement("div");
+          card.className = "grid-card";
+
+          card.innerHTML = `
+            <img src="${srcDataUrl}" title="点击设为大图预览" />
+            <div class="grid-card-info">
+              <div class="grid-card-name" title="${item.name}">${item.name}</div>
+              <button class="del-btn" title="删除">✕</button>
+            </div>
+          `;
+
+          // 点击图片切换主预览
+          card.querySelector("img").addEventListener("click", () => {
+            activeIndex = index;
+            updateMainPreview();
+          });
+
+          // 删除
+          card.querySelector(".del-btn").addEventListener("click", () => {
+            imageList.splice(index, 1);
+            if (activeIndex >= imageList.length)
+              activeIndex = Math.max(0, imageList.length - 1);
+            renderQueue();
+            updateMainPreview();
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
+      async function downloadAll() {
+        if (!imageList.length) return;
+        showLoading("正在保存图片...");
+
+        try {
+          const format = ctrlFmt.value;
+          const ext =
+            {
+              "image/jpeg": "jpg",
+              "image/png": "png",
+              "image/webp": "webp",
+              "image/tiff": "tiff",
+            }[format] || "jpg";
+          const quality =
+            format === "image/png" || format === "image/tiff"
+              ? undefined
+              : 0.95;
+
+          if (layoutMode === "long") {
+             // 导出且仅导出这一张长图
+             const fileName = `拼接长图_${imageList.length}张.${ext}`;
+             const blob = await new Promise((resolve) =>
+                cachedLongCanvas.toBlob(resolve, format, quality),
+             );
+             saveAs(blob, fileName);
+          } else {
+             // 遍历生成 Blob 并直接下载
+             for (let i = 0; i < imageList.length; i++) {
+                const item = imageList[i];
+                const baseName = item.name.replace(/\.[^.]+$/, "");
+                const fileName = `${baseName}_导出.${ext}`;
+
+                // 将 Canvas 转换为 Blob
+                const blob = await new Promise((resolve) =>
+                   item.finalCanvas.toBlob(resolve, format, quality),
+                );
+
+                // 使用 FileSaver 直接下载
+                saveAs(blob, fileName);
+
+                // 增加延时，防止浏览器拦截批量下载
+                if (i < imageList.length - 1) {
+                   await new Promise((r) => setTimeout(r, 400));
+                }
+             }
+          }
+        } catch (e) {
+          console.error(e);
+          alert("保存失败，详情见控制台");
+        }
+        hideLoading();
+      }
+
+      function showLoading(msg) {
+        loading.textContent = msg;
+        loading.style.display = "block";
+      }
+      function hideLoading() {
+        loading.style.display = "none";
+      }
+
+      // GSAP 动画初始化
+      window.addEventListener('load', () => {
+        gsap.to(".panel-card", {
+          x: 0,
+          opacity: 1,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "power2.out"
+        });
+      });
+    </script>
+  </body>
+</html>

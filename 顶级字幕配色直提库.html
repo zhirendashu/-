@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自媒体高级字幕配色卡 · 植人大树专属</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card-bg: #1c1e26;
+      --border: #2a2e39;
+      --text: #ffffff;
+      --sub: #8b92a5;
+      --accent: #ff4757;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 40px;
+      min-height: 100vh;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    .header {
+      margin-bottom: 50px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      background: linear-gradient(90deg, #ff4757, #ff9f43);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+      word-break: keep-all;
+    }
+
+    .header p {
+      color: var(--sub);
+      font-size: 0.95rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .group-title {
+      font-size: 1.3rem;
+      color: var(--text);
+      margin: 40px 0 20px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 30px;
+    }
+
+    /* 影视级卡片设计 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border-color: #4a5263;
+    }
+
+    /* 高级演示画幅：模拟 21:9 电影宽画幅感觉 */
+    .demo-zone {
+      height: 180px;
+      background: #14151a; /* 极深的中性灰底色，最高级 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      /* 上下电影黑边隐喻 */
+      border-top: 3px solid #050505;
+      border-bottom: 3px solid #050505;
+    }
+
+    /* =========================================
+       极其真实的向外扩展字幕渲染层 
+       ========================================= */
+    .text-wrapper {
+      position: relative;
+      /* 给所有字幕加一个真实的影视级坠落阴影 */
+      filter: drop-shadow(0px 12px 15px rgba(0,0,0,0.85));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .demo-text {
+      position: relative;
+      font-size: 3.2rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-family: "PingFang SC", "Microsoft YaHei", "Impact", sans-serif;
+      text-align: center;
+      white-space: nowrap;
+      
+      /* 底色其实是描边色，用来被向外拓宽，这样就不伤原始字重 */
+      color: var(--stroke-color);
+      -webkit-text-stroke: var(--stroke-width) var(--stroke-color);
+      
+      /* 可以外接弥散发光 */
+      text-shadow: var(--custom-glow, none);
+    }
+
+    /* 这是真正最上层的彩色肉身，没有描边，完美骑合在底层上方 */
+    .demo-text::before {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      color: var(--fill-color);
+      -webkit-text-stroke: 0; /* 这是精髓：芯子不描边 */
+      z-index: 2;
+      pointer-events: none;
+    }
+    /* ========================================= */
+
+    .action-zone {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: #e2e8f0;
+      letter-spacing: 1px;
+    }
+
+    .copy-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .copy-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #242730;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #2d313c;
+      border-color: #5a647a;
+    }
+
+    .copy-btn span.label {
+      font-size: 0.75rem;
+      color: var(--sub);
+      font-weight: 600;
+    }
+
+    .copy-btn span.hex {
+      font-family: "Monaco", "Consolas", monospace;
+      font-size: 1.05rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* 小圆点颜色预览提示 */
+    .color-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-left: 6px;
+      vertical-align: middle;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.2);
+    }
+
+    /* 弹出提示框 */
+    #toast {
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #32ff7e;
+      color: #000;
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      box-shadow: 0 10px 25px rgba(50, 255, 126, 0.4);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 防盗水印及版本说明 -->
+  <script>
+    /**
+     * 作者：植人大树
+     * 个人主页：https://link3.cc/zhirendashu
+     * 版本：v2.0.0 (电影质感升级版)
+     * 开源协议：CC BY-NC-SA 4.0
+     */
+    const __AUTH_SIGNATURE = "179689535&0814";
+  </script>
+
+  <div class="header">
+    <h1>自媒体顶级字幕配色直提库</h1>
+    <p>专为剪映、PR、FCPX 字幕排版定制！本次完全重构底层渲染引擎：<br>采用独立解耦的**「向外扩张真实描边」**算法，确保字幕中心饱满不走形；配合**电影级光学坠落阴影 (Drop-Shadow)**底色，让你 1:1 沉浸式预览它的影视级高级感。</p>
+  </div>
+
+  <div id="app"></div>
+  <div id="toast">✅ 提取成功</div>
+
+  <script>
+    // == 顶级配色提取库数据词典 ==
+    const palettes = [
+      {
+        group: "⚓ 个人IP专属：植人海蓝主视觉",
+        items: [
+          { name: "经典航海白", text: "海军白夜", fill: "#FFFFFF", stroke: "#2c50ab", width: 6 },
+          { name: "黄金舰长", text: "黄金舰队", fill: "#fbbf24", stroke: "#2c50ab", width: 6 },
+          { name: "冰川冷夜", text: "冰川冷夜", fill: "#e0f2fe", stroke: "#1e3a8a", width: 6 },
+          { name: "深潜极境", text: "深潜极蓝", fill: "#2c50ab", stroke: "#ffffff", width: 4, glow: "0 0 20px rgba(44,80,171,0.6)" }
+        ]
+      },
+      {
+        group: "👑 大师绝赞色系 (高反差视觉)",
+        items: [
+          { name: "柯达复古潮", text: "柯达胶卷", fill: "#FAB617", stroke: "#E30613", width: 4 },
+          { name: "酸性质感", text: "酸性质感", fill: "#E5FF00", stroke: "#1A1A1A", width: 5 },
+          { name: "赛博霓虹警告", text: "霓虹警告", fill: "#FF00FF", stroke: "#FFFFFF", width: 3, glow: "0 0 25px rgba(255,0,255,0.8)" },
+          { name: "合成器电音蓝", text: "浪潮之音", fill: "#00FFFF", stroke: "#210B4B", width: 5 },
+          { name: "白质黑边百搭", text: "极简百搭", fill: "#FFFFFF", stroke: "#000000", width: 5 },
+          { name: "封锁高亮荧黄", text: "警报封锁", fill: "#FFF800", stroke: "#FF00FF", width: 4 }
+        ]
+      },
+      {
+        group: "🎞️ Gruvbox 相纸系列 (高级温润/复古影院)",
+        items: [
+          // 把字重放大一些，能看到更厚重的复古味道
+          { name: "胶片路灯黄", text: "老旧黄铜", fill: "#fabd2f", stroke: "#d79921", width: 4 },
+          { name: "相纸过曝红", text: "暗室冲洗", fill: "#fb4934", stroke: "#cc241d", width: 4 },
+          { name: "胶片褪色青", text: "薄荷胶片", fill: "#8ec07c", stroke: "#689d6a", width: 4 },
+          { name: "黄昏旧相册", text: "夕阳光晕", fill: "#fe8019", stroke: "#d65d0e", width: 4 },
+          { name: "泛黄古籍文本", text: "羊皮厚卷", fill: "#ebdbb2", stroke: "#504945", width: 5 }
+        ]
+      },
+      {
+        group: "☕ Catppuccin 极简清冷 (适合生活Vlog/冷峻暗调)",
+        items: [
+          { name: "火狐清冷粉", text: "清粉微光", fill: "#f2cdcd", stroke: "#11111b", width: 5 },
+          { name: "赛博情绪紫", text: "低落情绪风", fill: "#f5c2e7", stroke: "#11111b", width: 5 },
+          { name: "透彻冰蓝", text: "透彻深海", fill: "#74c7ec", stroke: "#11111b", width: 5 },
+          { name: "高级抹茶绿", text: "清晨抹茶", fill: "#a6e3a1", stroke: "#1e1e2e", width: 5 }
+        ]
+      },
+      {
+        group: "📷 Vlog 胶片感·IG 高级审美 (生活/摄影纪实)",
+        items: [
+          { name: "主标题强调色", text: "电影感标题", fill: "#d4cdc4", stroke: "#1c1c1a", width: 5 },
+          { name: "欧美褪色红(常规)", text: "褪色暗红", fill: "#e8e3dc", stroke: "#bc4f4a", width: 4 },
+          { name: "暗调墨绿(封面)", text: "胶片森绿", fill: "#c5ccb4", stroke: "#1a241b", width: 5 },
+          { name: "暖调生活(副标题)", text: "温暖纪实", fill: "#f8f3e6", stroke: "#9e866e", width: 4 }
+        ]
+      },
+      {
+        group: "🎞️ 数码开箱·高级灰卡器材风 (评测/科技)",
+        items: [
+          { name: "徕卡信仰红(主导)", text: "极致开箱", fill: "#e30613", stroke: "#111111", width: 5 },
+          { name: "18%灰卡(字幕)", text: "灰卡基准", fill: "#bfbfbf", stroke: "#0a0a0a", width: 4 },
+          { name: "科技冷银(副题)", text: "冷峻质感", fill: "#eef2f5", stroke: "#33383d", width: 4 },
+          { name: "暗调黑胶金(封面)", text: "质感黑金", fill: "#d4af37", stroke: "#111111", width: 5, glow: "0 0 15px rgba(212,175,55,0.4)" }
+        ]
+      },
+      {
+        group: "📻 宝丽来漏光感 (复古/情绪向)",
+        items: [
+          { name: "相纸本白(字幕)", text: "拍立得相纸", fill: "#f5f5f0", stroke: "#4a453f", width: 4 },
+          { name: "漏光暖橘(封面)", text: "情绪漏光橘", fill: "#f27935", stroke: "#2e1913", width: 5, glow: "0 0 20px rgba(242,121,53,0.5)" },
+          { name: "青橙胶片蓝(正文)", text: "情绪低光蓝", fill: "#3d7c80", stroke: "#09171a", width: 4 },
+          { name: "褪色芥末黄(副题)", text: "复古芥末", fill: "#cbd2b4", stroke: "#3a4a28", width: 4 }
+        ]
+      }
+    ];
+
+    const app = document.getElementById('app');
+
+    palettes.forEach(groupData => {
+      const title = document.createElement('h2');
+      title.className = 'group-title';
+      title.innerText = groupData.group;
+      app.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+
+      groupData.items.forEach(color => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        // 计算物理描边（向外扩由于视觉是对半减的，所以乘2左右能获得最佳的饱满外显粗度）
+        const outStrokeWidth = color.width * 2;
+        const textGlow = color.glow ? color.glow : 'none';
+
+        card.innerHTML = `
+          <div class="demo-zone">
+            <div class="text-wrapper" style="
+              --fill-color: ${color.fill}; 
+              --stroke-color: ${color.stroke}; 
+              --stroke-width: ${outStrokeWidth}px;
+              --custom-glow: ${textGlow};
+            ">
+              <div class="demo-text" data-text="${color.text}">${color.text}</div>
+            </div>
+          </div>
+          <div class="action-zone">
+            <div class="card-title">${color.name}</div>
+            <div class="copy-group">
+              <button class="copy-btn" onclick="execCopy('${color.fill}', '字色[填充]')">
+                <span class="label">字色 (填充)</span>
+                <div>
+                  <span class="hex" style="color: ${['#000000', '#11111b', '#1a1a1a', '#1e1e2e'].includes(color.fill.toLowerCase()) ? '#fff' : color.fill}">${color.fill}</span>
+                </div>
+              </button>
+              <button class="copy-btn" onclick="execCopy('${color.stroke}', '描边[边框]')">
+                <span class="label">边框 (描边)</span>
+                <div>
+                  <span class="hex" style="color: ${['#000000', '#11111b', '#1a1a1a', '#1e1e2e'].includes(color.stroke.toLowerCase()) ? '#fff' : color.stroke}">${color.stroke}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      app.appendChild(grid);
+    });
+
+    let toastTimeout;
+    window.execCopy = function(hex, typeName) {
+      const cleanHex = hex.replace(/^#/, '');
+      navigator.clipboard.writeText(cleanHex).then(() => {
+        const toast = document.getElementById('toast');
+        toast.innerHTML = `成功提取 ${typeName}：<span style="font-family:monospace; margin-left:8px; font-size: 1.1rem;">${cleanHex}</span>`;
+        toast.classList.add('show');
+        
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          toast.classList.remove('show');
+        }, 2000);
+      }).catch(err => {
+        alert("复制失败，请手动选择复制。");
+      });
+    };
+  </script>
+</body>
+</html>
