@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini 水印修复修复大师 - 植人大树</title>
+    <!--
+    /**
+     * 作者：植人大树
+     * 个人主页：https://link3.cc/zhirendashu
+     * 版本：v1.0.0
+     * 发布日期：2026-03-28
+     * 开源协议：CC BY-NC-SA 4.0
+     * 禁止未经授权的商业化使用
+     * 隐藏证明代码：179689535&0814
+     */
+    -->
+    <style>
+        :root {
+            --primary-navy: #2c50ab;
+            --accent-blue: #4a90e2;
+            --bg-dark: #0a0e17;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -0.05rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-blue);
+            background: rgba(74, 144, 226, 0.05);
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        #fileInput { display: none; }
+
+        .preview-container {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.8rem 2rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-navy);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3761cc;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(44, 80, 171, 0.4);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: #fff;
+        }
+
+        .btn-outline:hover {
+            background: var(--glass-bg);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .status-ready { background: rgba(39, 174, 96, 0.2); color: #2ecc71; }
+        .status-info { background: rgba(74, 144, 226, 0.2); color: #4a90e2; }
+
+        footer {
+            margin-top: 3rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-badge status-ready">无损算法修复端</div>
+    <h1>Gemini 水印修复大师</h1>
+    <p style="color: rgba(255,255,255,0.5); margin-bottom: 2rem;">基于数学反向 Alpha 混合算法的 Gemini 图像修复工具</p>
+
+    <div class="container">
+        <label for="fileInput" class="upload-area" id="dropZone">
+            <span class="upload-icon">📸</span>
+            <p>点击或拖拽 Gemini 生成的图片到此处</p>
+            <span style="font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-top: 1rem; display: block;">自动识别 48px/96px 水印</span>
+        </label>
+        <input type="file" id="fileInput" accept="image/*">
+
+        <div class="preview-container" id="previewContainer">
+            <div class="canvas-wrapper">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+            <div class="controls">
+                <button class="btn-outline" onclick="location.reload()">重新上传</button>
+                <button class="btn-primary" id="processBtn">一键清除水印</button>
+                <button class="btn-success" id="downloadBtn" style="display: none;">下载修复后的图片</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 植人大树 · 摄影师的 AI 工具箱</p>
+        <p>179689535&0814</p>
+    </footer>
+
+    <script src="./gemini-alpha-maps.js"></script>
+    <script id="engine-script">
+        // --- 核心引擎配置 ---
+        const ENGINE_CONFIG = {
+            ALPHA_NOISE: 3 / 255,
+            ALPHA_THRESHOLD: 0.002,
+            MAX_ALPHA: 0.99,
+            LOGO_COLOR: 255
+        };
+
+        // 水印遮罩数据集合 (由后续步骤分块注入)
+        // 识别逻辑
+        function detectWatermarkStyle(w, h) {
+            if (w > 1024 && h > 1024) {
+                return { size: 96, mx: 64, my: 64 };
+            }
+            return { size: 48, mx: 32, my: 32 };
+        }
+
+        // --- 核心反向混合算法 ---
+        function applyRepair(imgData, mask, pos) {
+            const { x, y, size } = pos;
+            const pixels = imgData.data;
+
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const imgIdx = ((y + r) * imgData.width + (x + c)) * 4;
+                    const rawAlpha = mask[r * size + c];
+
+                    const signal = Math.max(0, rawAlpha - ENGINE_CONFIG.ALPHA_NOISE);
+                    if (signal < ENGINE_CONFIG.ALPHA_THRESHOLD) continue;
+
+                    const alpha = Math.min(rawAlpha, ENGINE_CONFIG.MAX_ALPHA);
+                    const invAlpha = 1.0 - alpha;
+
+                    for (let ch = 0; ch < 3; ch++) {
+                        const val = pixels[imgIdx + ch];
+                        const fixed = (val - alpha * ENGINE_CONFIG.LOGO_COLOR) / invAlpha;
+                        pixels[imgIdx + ch] = Math.max(0, Math.min(255, Math.round(fixed)));
+                    }
+                }
+            }
+        }
+
+        // --- UI 交互逻辑 ---
+        const ui = {
+            input: document.getElementById('fileInput'),
+            zone: document.getElementById('dropZone'),
+            preview: document.getElementById('previewContainer'),
+            canvas: document.getElementById('mainCanvas'),
+            btnFix: document.getElementById('processBtn'),
+            btnDl: document.getElementById('downloadBtn')
+        };
+        
+        const ctx = ui.canvas.getContext('2d', { willReadFrequently: true });
+        let currentImg = null;
+
+        ui.input.onchange = (e) => loadFile(e.target.files[0]);
+        ui.zone.ondragover = (e) => { e.preventDefault(); ui.zone.classList.add('dragover'); };
+        ui.zone.ondragleave = () => ui.zone.classList.remove('dragover');
+        ui.zone.ondrop = (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); };
+
+        function loadFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImg = img;
+                    ui.canvas.width = img.width;
+                    ui.canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    ui.zone.style.display = 'none';
+                    ui.preview.style.display = 'flex';
+                    ui.btnFix.style.display = 'flex';
+                    ui.btnDl.style.display = 'none';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        ui.btnFix.onclick = () => {
+            if (!currentImg) return;
+            const style = detectWatermarkStyle(ui.canvas.width, ui.canvas.height);
+            const mask = getEmbeddedAlphaMap(style.size);
+            
+            if (!mask) {
+                alert('核心遮罩数据加载中，请稍后刷新重试...');
+                return;
+            }
+
+            const pos = {
+                x: ui.canvas.width - style.mx - style.size,
+                y: ui.canvas.height - style.my - style.size,
+                size: style.size
+            };
+
+            const imgData = ctx.getImageData(0, 0, ui.canvas.width, ui.canvas.height);
+            applyRepair(imgData, mask, pos);
+            ctx.putImageData(imgData, 0, 0);
+            
+            ui.btnFix.style.display = 'none';
+            ui.btnDl.style.display = 'flex';
+        };
+
+        ui.btnDl.onclick = () => {
+            const a = document.createElement('a');
+            a.download = `Gemini_Fixed_${Date.now()}.png`;
+            a.href = ui.canvas.toDataURL('image/png', 1.0);
+            a.click();
+        };
+    </script>
+</body>
+</html>
