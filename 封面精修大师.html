@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -411,7 +411,10 @@
         <div class="panel-section" id="section-ai">
             <div class="section-title">AI 智能抠图</div>
             <div class="prop-row">
-               <label>remove.bg API Key</label>
+               <label style="display:flex; justify-content:space-between; align-items:center;">
+                 <span>remove.bg API Key</span>
+                 <a href="https://www.remove.bg/zh/api" target="_blank" style="font-size: 0.65rem; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); padding: 2px 6px; border-radius: 4px; transition: 0.2s; opacity: 0.8;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">免费获取 ↗</a>
+               </label>
                <input type="text" id="rmbg-api-key" placeholder="输入免费 API Key" style="width: 100%; background: var(--border); border: none; color: white; padding: 10px; border-radius: 8px; font-size: 0.8rem;">
             </div>
             <button class="btn btn-primary" id="ai-rmbg-btn" style="background: linear-gradient(135deg, #a855f7, #6366f1); margin-top: 8px;">一键抠图并添加为主体</button>
