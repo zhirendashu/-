@@ -1,25 +1,40 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>封面精修大师 · 植人大树自媒体系列</title>
-    <!-- 常用库：Fabric.js 强大的 Canvas 图层引擎 -->
+    <script>
+      /**
+       * 作者：植人大树 | 个人主页：https://link3.cc/zhirendashu
+       * 开源协议：CC BY-NC-SA 4.0 | 禁止未经授权的商业化使用
+       */
+      const __AUTH_SIGNATURE = "179689535&0814";
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <!-- 引入强大的开源裁剪引擎 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+      /* 背景光斑 */
+      .bg-blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;filter:blur(90px);opacity:0.28;pointer-events:none}
+      .blob{position:absolute;border-radius:50%;animation:bmv 28s infinite alternate}
+      .blob-1{width:50vw;height:50vw;background:radial-gradient(circle,#ff2442,transparent 70%);top:-15%;right:-10%}
+      .blob-2{width:40vw;height:40vw;background:radial-gradient(circle,#ff7e5f,transparent 70%);bottom:-10%;left:-10%;animation-delay:-11s}
+      .blob-3{width:25vw;height:25vw;background:radial-gradient(circle,#a855f7,transparent 70%);top:38%;left:32%;animation-delay:-20s;opacity:.4}
+      @keyframes bmv{from{transform:translate(0,0)scale(1)}to{transform:translate(55px,38px)scale(1.1)}}
       :root {
-        --bg: #0b0d12;
-        --panel: #161922;
+        --bg: #05070a;
+        --panel: rgba(22, 26, 36, 0.72);
         --accent: #ff2442;
         --text: #ffffff;
         --sub: #828a9f;
-        --border: #2a2e3a;
+        --border: rgba(255, 255, 255, 0.09);
         --radius: 12px;
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,11 +51,22 @@
       /* 头部 */
       header {
         height: 60px;
-        background: var(--panel);
-        border-bottom: 1px solid var(--border);
+        background: rgba(11,13,18,0.8);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255,255,255,.09);
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0 24px; z-index: 10;
+        padding: 0 24px; z-index: 10; flex-shrink: 0;
       }
+      .header-back {
+        display: flex; align-items: center; gap: 5px;
+        color: #828a9f; text-decoration: none;
+        font-size: .84rem; font-weight: 500;
+        padding: 6px 14px; border-radius: 100px;
+        border: 1px solid rgba(255,255,255,.09);
+        background: rgba(255,255,255,.04);
+        transition: all .3s ease;
+      }
+      .header-back:hover { color: #fff; border-color: rgba(255,255,255,.18); }
       .logo { 
         font-weight: 800; 
         font-size: 1.2rem; 
@@ -99,7 +125,7 @@
       }
       .canvas-box {
         box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-        background: white;
+        background: #1e2028;
       }
 
       /* 表单组件美化 */
@@ -200,13 +226,19 @@
     </style>
   </head>
   <body>
-    <div id="loading-toast">处理中...</div>
+    <!-- 动态背景光斑 -->
+    <div class="bg-blobs">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+    <div id="loading-toast">处理中…</div>
 
     <header>
       <div style="display: flex; align-items: center; gap: 16px;">
-        <a href="index.html" style="color: var(--sub); text-decoration: none; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          返回门户
+        <a href="index.html" class="header-back">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          返回首页
         </a>
         <h1 class="logo">封面精修大师</h1>
       </div>
@@ -509,7 +541,7 @@
 
       // === 初始化 Fabric 画布 ===
       const canvas = new fabric.Canvas('c', {
-        backgroundColor: '#fff',
+        backgroundColor: '#1e2028',
         preserveObjectStacking: true
       });
 
@@ -1266,6 +1298,10 @@
 
       // 监听全局键盘 (复制、粘贴元素, 以及 Delete 删除)
       window.addEventListener('keydown', (e) => {
+        // 如果当前有获得焦点的输入框等原生输入源，放行系统行为
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
         const activeObj = canvas.getActiveObject();
         // 如果正在编辑文本内部，放行给其原生功能
         if (activeObj && activeObj.isEditing) return;
@@ -1317,6 +1353,10 @@
 
       // 监听系统粘贴 (外部文字或截图)
       window.addEventListener('paste', (e) => {
+         // 如果当前有获得焦点的输入框等原生输入源，放行系统粘贴
+         const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+         if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
          const activeObj = canvas.getActiveObject();
          // 若当前在编辑文本框，交由浏览器原生处理
          if (activeObj && activeObj.isEditing) return; 
@@ -1368,6 +1408,18 @@
          }
       });
 
+      // === 全局支持直接拖拽图片 ===
+      document.addEventListener('dragover', (e) => {
+          e.preventDefault();
+      });
+      document.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const file = e.dataTransfer.files[0];
+          if (file && file.type.startsWith('image/')) {
+              setBackgroundImage(URL.createObjectURL(file));
+          }
+      });
+
       // GSAP 动画初始化
       window.addEventListener('load', () => {
           const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
@@ -1386,5 +1438,264 @@
       });
 
     </script>
-  </body>
+  <!-- Modern Toast UI 注入 -->
+<style>
+#modern-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(22, 26, 36, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#modern-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.drag-active {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.3) inset !important;
+    background: rgba(99, 102, 241, 0.08) !important;
+}
+</style>
+<div id="modern-toast"></div>
+<script>
+window.showToast = function(msg, type="info") {
+    const toast = document.getElementById("modern-toast");
+    const icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : '✨');
+    toast.innerHTML = ${icon} <span style="margin-left:4px;"></span>;
+    toast.classList.add("show");
+    if(window._toastTimer) clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove("show"), 3000);
+};
+
+// 重写原生 alert 以呈现无阻滞体验
+window.alert = function(msg) {
+    showToast(msg, 'error');
+};
+
+// 全局响应拖放边框高亮
+document.addEventListener("DOMContentLoaded", () => {
+    const dropZones = document.querySelectorAll(".preview-area, .canvas-container-wrap, #drop-zone");
+    dropZones.forEach(zone => {
+        window.addEventListener("dragenter", (e) => { e.preventDefault(); zone.classList.add("drag-active"); });
+        window.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-active"); });
+        window.addEventListener("dragleave", (e) => { 
+            if (e.clientX === 0 || e.clientY === 0) zone.classList.remove("drag-active");
+        });
+        window.addEventListener("drop", (e) => { zone.classList.remove("drag-active"); });
+    });
+});
+</script>
+<!-- 注入结束 -->
+<!-- 极客画框蒙版系统注入 -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. 注入 Toolbar 按钮
+    const toolbar = document.querySelector('.toolbar');
+    if(toolbar && !document.querySelector('[data-target="section-mask"]')) {
+        toolbar.insertAdjacentHTML('beforeend', 
+          <div class="tool-btn" data-target="section-mask" id="btn-mask">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path><path d="M8 3v18"></path><path d="M16 3v18"></path><path d="M3 8h18"></path><path d="M3 16h18"></path></svg>
+            <span style="color:var(--accent); font-weight: bold; margin-top:2px;">高级开窗</span>
+          </div>
+        );
+    }
+
+    // 2. 注入边栏 Panel
+    const sidePanel = document.querySelector('.side-panel');
+    if(sidePanel && !document.getElementById('section-mask')) {
+        sidePanel.insertAdjacentHTML('beforeend', 
+          <div class="panel-section" id="section-mask">
+              <div class="section-title">IG 镂空画报蒙版</div>
+              <div style="font-size: 0.75rem; color: var(--sub); line-height: 1.6; margin-bottom: 8px;">
+                 ✨ 这是类似 WalkColor 等最前沿的设计，为海报盖上一层带镂空的物理画框蒙版，营造绝佳的时髦空间感！
+              </div>
+              
+              <div class="prop-row">
+                  <label>镂空形状预设</label>
+                  <div class="style-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                      <button class="btn btn-ghost mask-ctrl-btn" style="padding:10px 4px;font-size:0.75rem;" data-type="polaroid">📷 拍立得</button>
+                      <button class="btn btn-ghost mask-ctrl-btn" style="padding:10px 4px;font-size:0.75rem;" data-type="square">🖼 现代方窗</button>
+                      <button class="btn btn-ghost mask-ctrl-btn" style="padding:10px 4px;font-size:0.75rem;" data-type="circle">⭕ 唱片圆窗</button>
+                      <button class="btn btn-ghost mask-ctrl-btn" style="padding:10px 4px;font-size:0.75rem;" data-type="ticket">🎫 撕掉票根</button>
+                      <button class="btn btn-ghost mask-ctrl-btn" style="padding:10px 4px;font-size:0.75rem;" data-type="arch">🏛 罗马拱门</button>
+                      <button class="btn btn-ghost mask-ctrl-btn" style="padding:10px 4px;font-size:0.75rem;" data-type="heart">❤️ 多巴胺爱心</button>
+                  </div>
+                  <button class="btn btn-ghost mask-ctrl-btn" style="margin-top: 6px; border: 1px solid #fb7185; color: #fb7185;" data-type="none">✕ 移除蒙版框</button>
+              </div>
+
+              <div class="prop-row" style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
+                 <label>蒙版填充与内投影</label>
+                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                     <input type="color" id="mask-color-picker" value="#ffffff" style="flex: 1;">
+                     <input type="range" id="mask-opacity" min="0" max="100" value="95" style="flex: 2;">
+                 </div>
+                 <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--sub); margin-top: -8px; margin-bottom: 4px;">
+                     <span>纯色</span><span>透明度半抛光</span>
+                 </div>
+                 
+                 <label>边缘镂空深度/厚度</label>
+                 <input type="range" id="mask-thickness" min="0" max="40" value="10">
+                 
+                 <label>悬浮内阴影 (提升真实感)</label>
+                 <input type="range" id="mask-shadow-blur" min="0" max="100" value="40">
+              </div>
+          </div>
+        );
+    }
+
+    // 绑定事件到新按钮 (如果原生 JS 是用 querySelectorAll('.tool-btn')，新加的没绑定到)
+    const newBtn = document.getElementById('btn-mask');
+    if (newBtn) {
+        newBtn.addEventListener('click', () => {
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            newBtn.classList.add('active');
+            document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+            document.getElementById('section-mask').classList.add('active');
+        });
+    }
+
+    // 核心蒙版构建逻辑
+    let currentMaskObj = null;
+    let activeMaskType = 'none';
+
+    function hexToRgba(hex, a) {
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? gba(, , , ) : gba(255,255,255,);
+    }
+
+    function renderMask() {
+        if (currentMaskObj) {
+            canvas.remove(currentMaskObj);
+            currentMaskObj = null;
+        }
+        if (activeMaskType === 'none' || !canvas) {
+            if(canvas) canvas.renderAll();
+            return;
+        }
+
+        const W = canvas.width;
+        const H = canvas.height;
+        const M = Math.min(W, H);
+        
+        let pathStr = "";
+        const baseThickness = parseInt(document.getElementById('mask-thickness').value) / 100;
+        
+        if (activeMaskType === 'polaroid') {
+            const pd = M * (0.05 + baseThickness * 0.5);
+            const bpd = M * (0.15 + baseThickness);
+            pathStr = M 0,0 H  V  H 0 Z M , V  H  V  Z;
+        } else if (activeMaskType === 'square') {
+            const pd = M * (0.05 + baseThickness);
+            pathStr = M 0,0 H  V  H 0 Z M , V  H  V  Z;
+        } else if (activeMaskType === 'arch') {
+            const pd = M * (0.02 + baseThickness);
+            const aw = W - pd * 2;
+            const ar = aw / 2;
+            pathStr = M 0,0 H  V  H 0 Z M , V  A , 0 0,1 , V  Z;
+        } else if (activeMaskType === 'circle') {
+            const cx = W/2, cy = H/2;
+            const r = M * (0.45 - baseThickness);
+            pathStr = M 0,0 H  V  H 0 Z M , a , 0 1,0 ,0 a , 0 1,0 -,0;
+        } else if (activeMaskType === 'heart') {
+            const cx = W/2, cy = H/2 + M*0.05;
+            const s = M * (0.022 - baseThickness * 0.01);
+            pathStr = M 0,0 H  V  H 0 Z M , C , , , A , 0 0,1 , A , 0 0,1 , C , , , Z;
+        } else if (activeMaskType === 'ticket') {
+            const pd = M * 0.05;
+            const d = 30 + baseThickness * 100;
+            pathStr = M 0,0 H  V  H 0 Z M , H  V  A , 0 0,0 , V  H  V  A , 0 0,0 , Z;
+        }
+
+        if(!pathStr) return;
+
+        const hex = document.getElementById('mask-color-picker').value;
+        const opacity = parseInt(document.getElementById('mask-opacity').value) / 100;
+        const rgbaColor = hexToRgba(hex, opacity);
+        
+        const shadowBlur = parseInt(document.getElementById('mask-shadow-blur').value);
+        const shadow = shadowBlur > 0 ? new fabric.Shadow({
+           color: 'rgba(0,0,0,0.6)',
+           blur: shadowBlur,
+           offsetX: 0,
+           offsetY: 0
+        }) : null;
+
+        currentMaskObj = new fabric.Path(pathStr, {
+            fill: rgbaColor,
+            fillRule: 'evenodd',
+            selectable: false,
+            evented: false,
+            left: 0,
+            top: 0,
+            shadow: shadow,
+            objectCaching: false // 避免某些高清模糊渲染错误
+        });
+        
+        canvas.add(currentMaskObj);
+        
+        // 确保它永远在最上面
+        const sendToFront = () => {
+            if(currentMaskObj) currentMaskObj.bringToFront();
+        };
+        sendToFront();
+        
+        // 事件绑定，确保所有元素的添加或移动都不会覆盖边框
+        canvas.off('object:added', sendToFront);
+        canvas.on('object:added', sendToFront);
+        canvas.off('object:modified', sendToFront);
+        canvas.on('object:modified', sendToFront);
+        
+        canvas.renderAll();
+    }
+
+    document.querySelectorAll('.mask-ctrl-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.mask-ctrl-btn').forEach(b => {
+                b.style.borderColor = 'transparent';
+                b.style.background = 'rgba(255,255,255,0.05)';
+            });
+            const type = e.target.dataset.type;
+            if(type !== 'none') {
+               e.target.style.borderColor = 'var(--accent)';
+               e.target.style.background = 'rgba(255,36,66,0.1)';
+            }
+            activeMaskType = type;
+            renderMask();
+        });
+    });
+
+    ['mask-color-picker', 'mask-opacity', 'mask-thickness', 'mask-shadow-blur'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.addEventListener('input', () => renderMask());
+        }
+    });
+    
+    // 当画布比例切换被触发时，重新生成蒙版
+    const ratioSelector = document.getElementById('canvas-ratio');
+    if(ratioSelector) {
+        ratioSelector.addEventListener('change', () => {
+            setTimeout(renderMask, 100);
+        });
+    }
+});
+</script>
+<!-- 蒙版系统注入结束 -->
+</body>
 </html>

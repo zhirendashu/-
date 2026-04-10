@@ -4,7 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NipponColors 东方传统雅韵色谱 · 植人大树</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    /* 动态背景光斑 - 随主色变色 */
+    .bg-blobs{position:fixed;inset:0;z-index:0;overflow:hidden;filter:blur(120px);opacity:0.12;pointer-events:none;transition:opacity 1.2s}
+    .blob{position:absolute;border-radius:50%;animation:bmv 32s infinite alternate}
+    .blob-1{width:60vw;height:60vw;background:radial-gradient(circle,var(--bg-color,#eeb8c3),transparent 70%);top:-20%;right:-15%}
+    .blob-2{width:40vw;height:40vw;background:radial-gradient(circle,var(--bg-color,#f4a7b9),transparent 70%);bottom:-15%;left:-10%;animation-delay:-14s}
+    @keyframes bmv{from{transform:translate(0,0)scale(1)}to{transform:translate(35px,25px)scale(1.08)}}
     :root {
       --font-serif: "Noto Serif SC", "Songti SC", "SimSun", "Adobe Garamond Pro", serif;
       --font-sans: "Outfit", "Helvetica Neue", "Myriad Pro", sans-serif;
@@ -25,27 +34,31 @@
 
     /* 顶部控制栏 */
     .top-bar {
-      position: absolute;
-      top: 40px;
-      left: 40px;
-      z-index: 50;
+      position: fixed;
+      top: 12px;
+      left: 20px;
+      z-index: 200;
       display: flex;
-      gap: 20px;
+      gap: 12px;
     }
     .top-btn {
-      color: rgba(255,255,255,0.8);
+      display: flex; align-items: center; gap: 6px;
+      color: rgba(255,255,255,0.75);
       text-decoration: none;
-      font-family: var(--font-sans);
-      font-size: 0.9rem;
-      border: 1px solid rgba(255,255,255,0.3);
-      padding: 8px 16px;
-      border-radius: 40px;
-      transition: 0.3s;
+      font-family: 'Outfit', var(--font-sans);
+      font-size: 0.82rem; font-weight: 500; letter-spacing: 0.02em;
+      border: 1px solid rgba(255,255,255,0.22);
+      padding: 7px 15px;
+      border-radius: 100px;
+      transition: all 0.25s ease;
       cursor: pointer;
-      background: rgba(0,0,0,0.05);
-      letter-spacing: 1px;
+      background: rgba(0,0,0,0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      white-space: nowrap;
     }
-    .top-btn:hover { background: rgba(255,255,255,0.2); color: #fff; transform: translateY(-2px); }
+    .top-btn:hover { background: rgba(255,255,255,0.18); color: #fff; transform: translateY(-2px); border-color: rgba(255,255,255,0.5); }
+    .top-btn:active { transform: scale(0.97); }
 
     /* 中央数据区 */
     .center-data {
@@ -233,9 +246,18 @@
 <body>
   <script>const __AUTH_SIGNATURE = "179689535&0814";</script>
 
+  <!-- 动态背景光斑（随主色调联动） -->
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
   <div class="top-bar">
-    <a href="index.html" class="top-btn">← 返回大厅集合</a>
-    <div class="top-btn" onclick="extractAll()">📑 一键提取全本色录 (TXT)</div>
+    <a href="index.html" class="top-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      返回首页
+    </a>
+    <div class="top-btn" onclick="extractAll()">📑 一键提取全色录</div>
   </div>
 
   <div class="center-data">

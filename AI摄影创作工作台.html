@@ -4,8 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI 摄影创作中枢 · 植人大树</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* 背景光斑 */
+    .bg-blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;filter:blur(100px);opacity:0.25;pointer-events:none}
+    .blob{position:absolute;border-radius:50%;animation:bmv 28s infinite alternate}
+    .blob-1{width:50vw;height:50vw;background:radial-gradient(circle,#2c50ab,transparent 70%);top:-15%;right:-10%}
+    .blob-2{width:40vw;height:40vw;background:radial-gradient(circle,#9b72ff,transparent 70%);bottom:-10%;left:-10%;animation-delay:-11s}
+    .blob-3{width:25vw;height:25vw;background:radial-gradient(circle,#6384ff,transparent 70%);top:38%;left:32%;animation-delay:-20s;opacity:.4}
+    @keyframes bmv{from{transform:translate(0,0)scale(1)}to{transform:translate(55px,38px)scale(1.1)}}
     /* ===== 全局样式 & 设计系统 ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -296,7 +305,7 @@
       margin: 20px 0;
     }
 
-    /* 加载动画 */
+    /* \u52a0\u8f7d\u52a8\u753b */
     .spinner {
       width: 16px; height: 16px;
       border: 2px solid rgba(255,255,255,0.3);
@@ -306,9 +315,33 @@
       display: none;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== \u79fb\u52a8\u7aef\u9002\u914d (768px \u65ad\u70b9) ===== */
+    @media (max-width: 768px) {
+      body { flex-direction: column; overflow: visible; min-height: 100dvh; }
+      .sidebar {
+        width: 100%; height: auto; max-height: none;
+        border-right: none; border-bottom: 1px solid var(--border-color);
+        overflow-y: visible; flex-shrink: 0;
+      }
+      /* \u4fa7\u8fb9\u680f\u5bfc\u822a\u5706\u70b9\u5728\u624b\u673a\u4e0a\u6539\u4e3a\u6c34\u5e73\u6eda\u52a8 */
+      .sidebar .nav-items { flex-direction: row; overflow-x: auto; padding-bottom: 4px; gap: 4px; }
+      .nav-item { flex-shrink: 0; flex-direction: column; padding: 8px 12px; min-width: 80px; justify-content: center; }
+      .nav-item span { display: none; }
+      .main-content { overflow: visible; height: auto; }
+      .glass-card { padding: 20px 16px; }
+      .btn { padding: 12px 18px; font-size: 14px; }
+      .settings-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
+  <!-- 动态背景光斑 -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
 
   <!-- 左侧导航 -->
   <aside class="sidebar">
@@ -329,6 +362,10 @@
       <div class="nav-item" id="nav-settings" data-target="view-settings">
         ⚙️ 自定义大模型 API
       </div>
+      <a href="index.html" style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:10px;margin-top:8px;color:#586380;text-decoration:none;font-size:14px;font-weight:500;border:1px solid rgba(99,132,255,.15);transition:all .2s;" onmouseover="this.style.color='#e8ecff';this.style.background='rgba(99,132,255,.1)'" onmouseout="this.style.color='#586380';this.style.background='transparent'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        返回工具首页
+      </a>
     </div>
   </aside>
 

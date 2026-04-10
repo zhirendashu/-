@@ -4,11 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>封面比例转换工具 · 竖版转16:9专业版</title>
-    <!-- 引入文件保存所需 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+      /* 背景光斑 */
+      .bg-blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;filter:blur(90px);opacity:0.28;pointer-events:none}
+      .blob{position:absolute;border-radius:50%;animation:bmv 28s infinite alternate}
+      .blob-1{width:50vw;height:50vw;background:radial-gradient(circle,#5b8dee,transparent 70%);top:-15%;right:-10%}
+      .blob-2{width:40vw;height:40vw;background:radial-gradient(circle,#a78bfa,transparent 70%);bottom:-10%;left:-10%;animation-delay:-11s}
+      .blob-3{width:25vw;height:25vw;background:radial-gradient(circle,#34d399,transparent 70%);top:38%;left:32%;animation-delay:-20s;opacity:.4}
+      @keyframes bmv{from{transform:translate(0,0)scale(1)}to{transform:translate(55px,38px)scale(1.1)}}
       /* ==================== 基础重置 ==================== */
       *,
       *::before,
@@ -20,6 +28,7 @@
       :root {
         --bg: #0d0f14;
         --surface: #161a24;
+        --surface-glass: rgba(22, 26, 36, 0.72);
         --card: #1e2333;
         --border: #2c3347;
         --accent: #5b8dee;
@@ -41,20 +50,40 @@
 
       /* ==================== 头部 ==================== */
       header {
-        text-align: center;
-        padding: 24px 16px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 24px;
+        background: rgba(5,7,10,0.65);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255,255,255,.09);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        flex-shrink: 0;
       }
+      .header-back {
+        display: flex; align-items: center; gap: 5px;
+        color: #94a3b8; text-decoration: none;
+        font-size: .84rem; font-weight: 500;
+        padding: 6px 14px; border-radius: 100px;
+        border: 1px solid rgba(255,255,255,.09);
+        background: rgba(255,255,255,.04);
+        transition: all .3s ease;
+      }
+      .header-back:hover { color: #f8fafc; border-color: rgba(255,255,255,.18); }
       header h1 {
-        font-size: 1.5rem;
-        letter-spacing: -0.05em;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: -0.3px;
         background: linear-gradient(135deg, var(--accent), var(--accent2));
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
-        white-space: nowrap;
-        word-break: keep-all;
+      }
+      .header-badge {
+        font-size: .68rem; font-weight: 700; padding: 3px 10px; border-radius: 100px;
+        background: rgba(91,141,238,.15); border: 1px solid rgba(91,141,238,.3); color: #93c5fd;
       }
 
       /* ==================== 主体双栏布局 ==================== */
@@ -91,7 +120,7 @@
       #main-preview-box {
         width: 100%;
         flex: 1;
-        background: #000;
+        background: repeating-conic-gradient(rgba(255,255,255,.028) 0% 25%, transparent 0% 50%) 0 0/28px 28px;
         border-radius: var(--radius);
         border: 1px solid var(--border);
         overflow: hidden;
@@ -99,8 +128,25 @@
         align-items: center;
         justify-content: center;
         position: relative;
-        box-shadow: var(--shadow);
+        box-shadow: inset 0 20px 140px rgba(0,0,0,0.7);
         min-height: 0;
+      }
+      #inner-drop-zone { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 14px; cursor: pointer;
+        width: 440px; height: 280px; max-width: 88vw;
+        border-radius: 24px; border: 2px dashed rgba(91, 141, 238, .35);
+        background: rgba(91, 141, 238, .04); transition: 0.3s;
+        z-index: 5; pointer-events: none;
+      }
+      #main-preview-box:hover #inner-drop-zone { border-color: var(--accent); background: rgba(91, 141, 238, .1); }
+      .dz-icon { font-size: 2.8rem; line-height: 1; }
+      .dz-title { font-size: 1.05rem; font-weight: 700; color: #fff; }
+      .dz-sub { font-size: .84rem; color: var(--sub); }
+      .dz-chip {
+        font-size: .72rem; color: #94a3b8;
+        padding: 5px 14px; border-radius: 100px;
+        border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, .03);
       }
       #main-canvas {
         max-width: 100%;
@@ -109,10 +155,6 @@
         height: auto;
         object-fit: contain;
         display: none;
-      }
-      .placeholder-text {
-        color: var(--sub);
-        font-size: 0.9rem;
       }
 
       /* ==================== 右侧面板区 ==================== */
@@ -134,8 +176,8 @@
       #drop-zone {
         border: 2px dashed var(--border);
         border-radius: var(--radius);
-        background: var(--surface);
-        padding: 32px 16px;
+        background: rgba(255,255,255,0.02);
+        padding: 24px 16px;
         text-align: center;
         cursor: pointer;
         transition: all 0.2s;
@@ -177,8 +219,7 @@
         flex-direction: column;
         gap: 16px;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-        opacity: 0;
-        transform: translateX(20px);
+        /* 移除 GSAP 动画初始状态，确保离线环境下始终可见 */
       }
       .panel-title {
         font-size: 0.85rem;
@@ -355,31 +396,47 @@
         border-top: 1px solid var(--border);
       }
       .btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 600;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 0.84rem;
+        font-weight: 700;
         cursor: pointer;
         border: none;
-        transition: 0.2s;
+        transition: all 0.2s ease;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 7px;
+        position: relative;
+        overflow: hidden;
+        letter-spacing: 0.03em;
       }
+      .btn::after {
+        content: '';
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .btn:hover::after { opacity: 1; }
+      .btn:active { transform: scale(0.97); }
       .btn-primary {
         background: linear-gradient(135deg, var(--accent), var(--accent2));
         color: #fff;
+        box-shadow: 0 4px 20px rgba(91,141,238,0.4);
       }
       .btn-primary:hover {
-        opacity: 0.9;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(91,141,238,0.6);
       }
       .btn-danger {
-        background: transparent;
-        border: 1px solid #5c2020;
+        background: rgba(248,113,113,0.08);
+        border: 1px solid rgba(248,113,113,0.25);
         color: #f87171;
       }
       .btn-danger:hover {
-        background: #3b1515;
+        background: rgba(59,21,21,0.9);
+        border-color: rgba(248,113,113,0.5);
+        transform: translateY(-1px);
       }
 
       #preview-grid {
@@ -508,6 +565,12 @@
     </style>
   </head>
   <body>
+    <!-- 动态背景光斑 -->
+    <div class="bg-blobs">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
     <!-- 拖拽全局高亮提示 -->
     <div id="drag-overlay">
       <svg
@@ -564,13 +627,12 @@
     </script>
 
     <header>
-      <div style="position: absolute; left: 24px; top: 24px;">
-        <a href="index.html" style="color: var(--sub); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          返回门户
-        </a>
-      </div>
+      <a href="index.html" class="header-back">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        返回首页
+      </a>
       <h1>封面比例转换工具</h1>
+      <span class="header-badge">批量处理 &middot; 多比例</span>
     </header>
 
     <main class="main-container">
@@ -586,8 +648,11 @@
         </div>
         <div id="main-preview-box">
           <canvas id="main-canvas"></canvas>
-          <div class="placeholder-text" id="preview-placeholder">
-            载入图片以开始艺术转换
+          <div id="inner-drop-zone" class="placeholder-text">
+              <div class="dz-icon">📷</div>
+              <div class="dz-title">拖入照片 或 点此上传</div>
+              <div class="dz-sub">导入图像开启批量比例转换</div>
+              <div class="dz-chip">PNG · JPG · WebP</div>
           </div>
         </div>
       </div>

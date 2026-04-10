@@ -55,6 +55,35 @@
             line-height: 1.6;
         }
 
+        
+        /* ===== Accordion 折叠系统 ===== */
+        .accordion-container { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-1); z-index: 10; position: relative; }
+        .acc-group { background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-xl); overflow: hidden; transition: var(--transition); }
+        .acc-header { display: flex; align-items: center; justify-content: center; position: relative; padding: var(--sp-4); cursor: pointer; background: rgba(0,0,0,0.3); transition: 0.3s; }
+        .acc-header:hover { background: rgba(255,255,255,0.04); }
+        .acc-title { display: flex; align-items: center; gap: var(--sp-2); font-size: 1.15rem; font-weight: 700; letter-spacing: 1.5px; color: var(--text-main); }
+        
+        .acc-icon { position: absolute; right: var(--sp-4); transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1); width: 24px; height: 24px; color: var(--text-dim); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display:flex; align-items:center; justify-content:center; }
+        .acc-content { max-height: 0; overflow: hidden; transition: max-height 0.45s cubic-bezier(0.23, 1, 0.32, 1), padding 0.45s ease; padding: 0 var(--sp-4); }
+        
+        /* 独立科技感边框高亮状态 */
+        .acc-group.sys-active { border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.02); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        
+        .acc-group.ai-active { border-color: rgba(155,114,255,0.3); background: rgba(155,114,255,0.02); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        
+        .acc-group.lab-active { border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.02); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        
+
+        .acc-group.active .acc-header { background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .acc-group.active .acc-title { color: #fff; }
+        .acc-group.active .acc-icon { transform: rotate(180deg); color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+        .acc-group.active .acc-content { padding: var(--sp-4); }
+
+        /* 卡片内部适配网格 */
+        .acc-grid { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); align-items: stretch; }
+        @media (max-width: 1024px) { .acc-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .acc-grid { grid-template-columns: 1fr; } .acc-header { padding: var(--sp-3); } .acc-group.active .acc-content { padding: var(--sp-3); } }
+
         /* ===== 动态背景 ===== */
         .bg-blobs {
             position: fixed; inset: 0;
@@ -467,37 +496,18 @@
         </div>
 
         <!-- 三工具卡片：严格三等分 -->
-        <main class="tool-grid">
-
-            <!-- 新增：AI 中枢 -->
-            <a href="./AI摄影创作工作台.html" class="glass-card theme-ai">
-                <span class="card-step">🚀 AI CORE</span>
-                <div class="icon-box">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                    </svg>
+        
+        <div class="accordion-container">
+            
+            <!-- 视觉图文处理主干舱 -->
+            <div class="acc-group active sys-active" id="grp-sys">
+                <div class="acc-header" onclick="toggleAcc('grp-sys', 'sys-active')">
+                    <div class="acc-title">原生视觉与排版套件</div>
+                    <div class="acc-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
                 </div>
-                <div class="card-content">
-                    <h2>AI 摄影创作中枢</h2>
-                    <p>直连全球各大模型或自定义中转。内置千万粉丝级爆款文案、拍摄脚本撰写及小红书热门提取器。</p>
-                </div>
-                <div class="card-footer">
-                    <div class="tags">
-                        <span class="tag">AI 智脑</span>
-                        <span class="tag">全案策划</span>
-                    </div>
-                    <div class="go-btn">
-                        进入
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                            <polyline points="12 5 19 12 12 19"></polyline>
-                        </svg>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Step 1：拼图 -->
-            <a href="./小红书拼图工具.html" class="glass-card theme-rose">
+                <div class="acc-content">
+                    <div class="acc-grid">
+                        <a href="./小红书拼图工具.html" class="glass-card theme-rose">
                 <span class="card-step">STEP 01</span>
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -525,9 +535,7 @@
                     </div>
                 </div>
             </a>
-
-            <!-- Step 2：比例转换 -->
-            <a href="./封面比例转换工具.html" class="glass-card theme-indigo">
+                        <a href="./封面比例转换工具.html" class="glass-card theme-indigo">
                 <span class="card-step">STEP 02</span>
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -552,9 +560,7 @@
                     </div>
                 </div>
             </a>
-
-            <!-- Step 3：精修 -->
-            <a href="./封面精修大师.html" class="glass-card theme-emerald">
+                        <a href="./封面精修大师.html" class="glass-card theme-emerald">
                 <span class="card-step">STEP 03</span>
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -579,9 +585,7 @@
                     </div>
                 </div>
             </a>
-
-            <!-- 新增：图片切分神器 -->
-            <a href="./图片切分神器.html" class="glass-card theme-sky">
+                        <a href="./图片切分神器.html" class="glass-card theme-sky">
                 <span class="card-step">NEW</span>
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -606,9 +610,7 @@
                     </div>
                 </div>
             </a>
-
-            <!-- 新增：前后对比展示工具 -->
-            <a href="./前后对比展示工具.html" class="glass-card theme-indigo">
+                        <a href="./前后对比展示工具.html" class="glass-card theme-indigo">
                 <span class="card-step">NEW</span>
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -634,9 +636,96 @@
                     </div>
                 </div>
             </a>
+                        <a href="./截图套壳美化大师.html" class="glass-card theme-sky">
+                <span class="card-step">HOT🔥</span>
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>截图套壳美化大师</h2>
+                    <p>一键将普通截图美化成高级质感卡片。9 款大师渐变背景、macOS 窗口套壳、阴影发光全精控，纯离线高清导出。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">背景渐变</span>
+                        <span class="tag">套壳美化</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+                        <a href="./时髦加湿器.html" class="glass-card theme-amber">
+                <span class="card-step">HOT🔥</span>
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>时髦加湿器</h2>
+                    <p>无边际的阵列生成引擎。全自定透明矢量 SVG 与内置原生图形混编阵列排版，自由抽丝抽离极简视效。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">阵列生成</span>
+                        <span class="tag">矢量混排</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+                    </div>
+                </div>
+            </div>
 
-            <!-- 新增：AI全能水印修复 (NEW) -->
-            <a href="./Gemini水印修复.html" class="glass-card theme-ai">
+            <!-- AI 核心智脑中枢 -->
+            <div class="acc-group active ai-active" id="grp-ai">
+                <div class="acc-header" onclick="toggleAcc('grp-ai', 'ai-active')">
+                    <div class="acc-title">AI 物理工作站矩阵</div>
+                    <div class="acc-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                </div>
+                <div class="acc-content">
+                    <div class="acc-grid">
+                        <a href="./AI摄影创作工作台.html" class="glass-card theme-ai">
+                <span class="card-step">🚀 AI CORE</span>
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                    </svg>
+                </div>
+                <div class="card-content">
+                    <h2>AI 摄影创作中枢</h2>
+                    <p>直连全球各大模型或自定义中转。内置千万粉丝级爆款文案、拍摄脚本撰写及小红书热门提取器。</p>
+                </div>
+                <div class="card-footer">
+                    <div class="tags">
+                        <span class="tag">AI 智脑</span>
+                        <span class="tag">全案策划</span>
+                    </div>
+                    <div class="go-btn">
+                        进入
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+                        <a href="./Gemini水印修复.html" class="glass-card theme-ai">
                 <span class="card-step">STEP 04</span>
                 <div class="icon-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -661,20 +750,19 @@
                     </div>
                 </div>
             </a>
+                    </div>
+                </div>
+            </div>
 
-        </main>
-
-        <!-- 新增美学引擎模块 -->
-        <div style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: var(--sp-6); gap: var(--sp-1);">
-            <div class="workflow-label">全网极客高端色彩引擎</div>
-            <div style="font-size: 1.8rem; font-weight: 800; background: linear-gradient(90deg, #f43f5e, #f59e0b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">顶级色彩大师排版库</div>
-            <p style="color: var(--text-dim); font-size: 0.85rem; text-align: center; max-width: 600px;">专为高级影视海报和质感字幕打造的核心取色盘。完美移植开源圈好莱坞级电影质感与极简情绪颜色配方。</p>
-        </div>
-
-        <section class="tool-grid" style="margin-top: var(--sp-2);">
-            
-            <!-- 配色卡片1：字幕配色 -->
-            <a href="./顶级字幕配色直提库.html" class="glass-card theme-rose">
+            <!-- 美学色彩分离调取实验室 -->
+            <div class="acc-group" id="grp-lab">
+                <div class="acc-header" onclick="toggleAcc('grp-lab', 'lab-active')">
+                    <div class="acc-title">专业美学色彩色盘实验室</div>
+                    <div class="acc-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                </div>
+                <div class="acc-content">
+                    <div class="acc-grid">
+                        <a href="./顶级字幕配色直提库.html" class="glass-card theme-rose">
                 <span class="card-step">HOT🔥</span>
                 <div class="icon-box">
                     <!-- 文字Icon -->
@@ -694,9 +782,7 @@
                     <div class="go-btn">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
                 </div>
             </a>
-
-            <!-- 配色卡片2：Gruvbox -->
-            <a href="./Gruvbox复古胶片色库.html" class="glass-card theme-amber">
+                        <a href="./Gruvbox复古胶片色库.html" class="glass-card theme-amber">
                 <div class="icon-box">
                     <!-- 胶片/相机Icon -->
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -715,9 +801,7 @@
                     <div class="go-btn">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
                 </div>
             </a>
-
-            <!-- 配色卡片3：Catppuccin -->
-            <a href="./Catppuccin色彩工作室.html" class="glass-card theme-purple">
+                        <a href="./Catppuccin色彩工作室.html" class="glass-card theme-purple">
                 <div class="icon-box">
                     <!-- 咖啡/调色板图标 -->
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -736,9 +820,7 @@
                     <div class="go-btn">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
                 </div>
             </a>
-
-            <!-- 配色卡片4：NipponColors -->
-            <a href="./NipponColors东方传统色库.html" class="glass-card theme-pink">
+                        <a href="./NipponColors东方传统色库.html" class="glass-card theme-pink">
                 <span class="card-step">NEW ✨</span>
                 <div class="icon-box">
                     <!-- 扇子/古典图标 -->
@@ -758,8 +840,12 @@
                     <div class="go-btn">直提 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
                 </div>
             </a>
+                    </div>
+                </div>
+            </div>
 
-        </section>
+        </div>
+
 
         <!-- 页脚 -->
         <footer>
@@ -784,6 +870,28 @@
                         el.style.transform = 'translateY(0)';
                     });
                 }
+
+                
+                function toggleAcc(id, activeClass) {
+                    const group = document.getElementById(id);
+                    const content = group.querySelector('.acc-content');
+                    if(group.classList.contains('active')) {
+                        content.style.maxHeight = '0px';
+                        group.classList.remove('active');
+                        group.classList.remove(activeClass);
+                    } else {
+                        group.classList.add('active');
+                        group.classList.add(activeClass);
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }
+                }
+
+                // 初始赋予所有已打开的 Accordion 计算高度
+                setTimeout(() => {
+                    document.querySelectorAll('.acc-group.active .acc-content').forEach(el => {
+                        el.style.maxHeight = el.scrollHeight + 'px';
+                    });
+                }, 100);
 
                 window.addEventListener('DOMContentLoaded', () => {
                     // 若 GSAP 未加载（移动端网绍差、CDN 超时），直接显示

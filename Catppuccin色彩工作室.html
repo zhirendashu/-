@@ -4,7 +4,69 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catppuccin 色彩工作室 · 植人大树</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
+    /* 动态背景光斑 */
+    .bg-blobs{position:fixed;inset:0;z-index:0;overflow:hidden;filter:blur(100px);opacity:0.15;pointer-events:none}
+    .blob{position:absolute;border-radius:50%;animation:bmv 28s infinite alternate}
+    .blob-1{width:45vw;height:45vw;background:radial-gradient(circle,#cba6f7,transparent 70%);top:-10%;right:-5%}
+    .blob-2{width:35vw;height:35vw;background:radial-gradient(circle,#89b4fa,transparent 70%);bottom:-10%;left:-5%;animation-delay:-11s}
+    .blob-3{width:20vw;height:20vw;background:radial-gradient(circle,#f38ba8,transparent 70%);top:40%;left:30%;animation-delay:-20s}
+    @keyframes bmv{from{transform:translate(0,0)scale(1)}to{transform:translate(45px,30px)scale(1.1)}}
+
+    /* 统一 Header */
+    .site-header {
+      position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 200;
+      background: rgba(11,13,18,0.88); backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; padding: 0 20px; gap: 14px;
+    }
+    .header-back {
+      display: flex; align-items: center; gap: 6px; color: #7f849c;
+      text-decoration: none; font-family: 'Outfit', sans-serif;
+      font-size: 0.82rem; font-weight: 500;
+      padding: 6px 14px; border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.04);
+      transition: all .25s ease; white-space: nowrap;
+    }
+    .header-back:hover { color: #cdd6f4; border-color: rgba(203,166,247,0.4); background: rgba(203,166,247,0.08); }
+    .header-back svg { width: 14px; height: 14px; }
+    .header-logo {
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem;
+      letter-spacing: -0.04em; color: var(--accent, #cba6f7);
+    }
+
+    /* 按钮系统 - 极客科技风 */
+    .tab-btn {
+      padding: 8px 18px; border-radius: 8px; font-family: 'Outfit', sans-serif;
+      font-weight: 600; font-size: 0.82rem; letter-spacing: 0.04em;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: var(--subtext);
+      cursor: pointer; transition: all .2s ease; position: relative; overflow: hidden;
+    }
+    .tab-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.1),transparent); opacity:0; transition:opacity .2s; }
+    .tab-btn:hover::after { opacity:1; }
+    .tab-btn:hover { border-color: rgba(203,166,247,0.3); color: var(--text); }
+    .tab-btn:active { transform: scale(0.97); }
+    .tab-btn.active {
+      background: var(--accent); color: #11111b; border-color: var(--accent);
+      box-shadow: 0 4px 16px rgba(203,166,247,0.35);
+    }
+    .copy-btn {
+      flex: 1; padding: 10px 8px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+      color: var(--text); cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 5px; transition: all .2s ease;
+      font-family: 'Outfit', sans-serif; position: relative; overflow: hidden;
+    }
+    .copy-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.06),transparent); opacity:0; transition:opacity .2s; }
+    .copy-btn:hover { border-color: rgba(203,166,247,0.35); background: rgba(203,166,247,0.06); }
+    .copy-btn:hover::before { opacity:1; }
+    .copy-btn span.label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--subtext); }
+    .copy-btn span.hex { font-family: 'Outfit', monospace; font-size: 0.92rem; font-weight: 700; letter-spacing: 0.5px; }
     :root {
       --bg: #1e1e2e; --panel: #181825; --text: #cdd6f4;
       --subtext: #a6adc8; --border: #313244; --accent: #cba6f7;
@@ -12,7 +74,7 @@
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; transition: background 0.3s; }
+    body { font-family: 'Outfit', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; transition: background 0.3s; padding-top: 56px; }
     .sidebar { width: 320px; background: var(--panel); border-right: 1px solid var(--border); padding: 30px 20px; display: flex; flex-direction: column; gap: 20px; transition: 0.3s; box-shadow: 4px 0 15px rgba(0,0,0,0.3); z-index: 10; }
     .project-title { font-size: 1.5rem; font-weight: bold; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; transition: color 0.3s; white-space: nowrap; word-break: keep-all; }
     .project-desc { font-size: 0.85rem; line-height: 1.6; color: var(--subtext); background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
@@ -59,9 +121,9 @@
     #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #32ff7e; color: #000; padding: 12px 30px; border-radius: 30px; font-weight: 800; transition: 0.4s; opacity: 0; pointer-events: none; z-index: 1000; box-shadow: 0 10px 25px rgba(50, 255, 126, 0.4); }
     #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-    /* ===== 移动端适配 ===== */
+    /* 移动端适配 */
     @media (max-width: 768px) {
-      body { flex-direction: column; height: auto; }
+      body { flex-direction: column; height: auto; padding-top: 56px; }
       .sidebar { width: 100%; height: auto; box-shadow: none; border-right: none; border-bottom: 1px solid var(--border); padding: 16px; }
       .project-title { font-size: 1.2rem; white-space: normal; }
       .main-content { height: auto; overflow-y: visible; padding: 16px; }
@@ -71,13 +133,29 @@
   </style>
 </head>
 <body>
+
+  <!-- 动态背景光斑 -->
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- 统一导航 Header -->
+  <header class="site-header">
+    <a href="index.html" class="header-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      返回首页
+    </a>
+    <span class="header-logo">Catppuccin 色彩工作室</span>
+  </header>
   <!-- 引入提取自本地的真实 Catppuccin 色块数据变量 catppuccinData -->
   <script src="catppuccin-data.js"></script>
 
   <script>const __AUTH_SIGNATURE = "179689535&0814";</script>
 
   <div class="sidebar">
-    <a href="index.html" style="color: var(--subtext); text-decoration: none; font-size: 0.85rem; margin-bottom: 20px;">← 返回我的工具门户</a>
+    <!-- 侧边栏保留相应内容，移除旧返回链接 -->
     <div class="project-title">☕ Catppuccin 色彩库</div>
     <div class="project-desc">
       <h3>【极致护眼·直接直观版】</h3><br>

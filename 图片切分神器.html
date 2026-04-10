@@ -11,6 +11,9 @@
     发布日期：2026-03-24
     开源协议：CC BY-NC-SA 4.0
     -->
+    <script>const __AUTH_SIGNATURE = "179689535&0814";</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -22,10 +25,12 @@
             --border-glass: rgba(255, 255, 255, 0.09);
             --accent-primary: #6366f1;
             --accent-secondary: #f43f5e;
+            --accent-sky: #0ea5e9;
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
             --radius: 12px;
             --font-display: 'Outfit', 'Noto Sans SC', sans-serif;
+            --ease: all 0.32s cubic-bezier(0.23,1,0.32,1);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,13 +45,23 @@
             flex-direction: column;
         }
 
+        /* 背景光斑 */
+        .bg-blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;filter:blur(90px);opacity:0.3;pointer-events:none}
+        .blob{position:absolute;border-radius:50%;animation:bmv 28s infinite alternate}
+        .blob-1{width:50vw;height:50vw;background:radial-gradient(circle,#6366f1,transparent 70%);top:-15%;right:-10%}
+        .blob-2{width:40vw;height:40vw;background:radial-gradient(circle,#f43f5e,transparent 70%);bottom:-10%;left:-10%;animation-delay:-11s}
+        .blob-3{width:25vw;height:25vw;background:radial-gradient(circle,#0ea5e9,transparent 70%);top:38%;left:32%;animation-delay:-20s;opacity:.5}
+        @keyframes bmv{from{transform:translate(0,0)scale(1)}to{transform:translate(55px,38px)scale(1.1)}}
+
         header {
-            padding: 16px 32px;
-            background: rgba(10, 12, 16, 0.8);
+            padding: 12px 24px;
+            background: rgba(5,7,10,0.65);
             border-bottom: 1px solid var(--border-glass);
+            backdrop-filter: blur(16px);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-shrink: 0;
         }
         
         h1 {
@@ -63,15 +78,15 @@
         }
 
         .back-btn {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: color 0.2s;
+            display: flex; align-items: center; gap: 5px;
+            color: var(--text-dim); text-decoration: none;
+            font-size: .84rem; font-weight: 500;
+            padding: 6px 14px; border-radius: 100px;
+            border: 1px solid var(--border-glass);
+            background: rgba(255,255,255,.04);
+            transition: var(--ease);
         }
-        .back-btn:hover { color: #fff; }
+        .back-btn:hover { color: var(--text-main); border-color: rgba(255,255,255,.18); }
 
         .main-container {
             display: flex;
@@ -87,31 +102,34 @@
         /* 左侧预览区 */
         .preview-area {
             flex: 1;
-            background: rgba(0,0,0,0.4);
-            border: 1px dashed var(--border-glass);
+            background: repeating-conic-gradient(rgba(255,255,255,.028) 0% 25%, transparent 0% 50%) 0 0/28px 28px;
             border-radius: var(--radius);
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: auto;
+            overflow: hidden;
             padding: 20px;
+            box-shadow: inset 0 20px 140px rgba(0,0,0,0.7);
         }
+        .preview-area.drag-active { background: rgba(99, 102, 241, 0.05); }
 
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+        #inner-drop-zone { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 14px; cursor: pointer;
+            width: 440px; height: 280px; max-width: 88vw;
+            border-radius: 24px; border: 2px dashed rgba(99, 102, 241, .35);
+            background: rgba(99, 102, 241, .04); transition: 0.3s;
+            z-index: 5; pointer-events: none;
         }
-        
-        .empty-tip {
-            position: absolute;
-            color: var(--text-dim);
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
+        .preview-area:hover #inner-drop-zone { border-color: var(--accent-primary); background: rgba(99, 102, 241, .1); }
+        .dz-icon { font-size: 2.8rem; line-height: 1; }
+        .dz-title { font-size: 1.05rem; font-weight: 700; color: #fff; }
+        .dz-sub { font-size: .84rem; color: var(--text-dim); }
+        .dz-chip {
+            font-size: .72rem; color: #94a3b8;
+            padding: 5px 14px; border-radius: 100px;
+            border: 1px solid var(--border-glass); background: rgba(255, 255, 255, .03);
         }
 
         /* 右侧面板 */
@@ -262,22 +280,35 @@
     </style>
 </head>
 <body>
-    <div id="loading"><div class="spinner"></div><div id="load-text">处理中...</div></div>
+    <!-- 动态背景光斑 -->
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div id="loading"><div class="spinner"></div><div id="load-text">处理中…</div></div>
 
     <header>
-        <h1>
-            <a href="index.html" class="back-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> 返回大厅</a>
-            图片分割切图神器
-        </h1>
-        <div style="color:var(--text-dim); font-size: 0.85rem;">一键分割九宫格 / 无缝斜切图 · Zip批量导出透明片</div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <a href="index.html" class="back-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                返回首页
+            </a>
+            <span style="font-size:1rem;font-weight:700;letter-spacing:-.3px">图片分割切图神器</span>
+            <span style="font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:100px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#a5b4fc">九宫格 &middot; 斜切</span>
+        </div>
+        <div style="color:var(--text-dim);font-size:.78rem">Zip批量导出透明片</div>
     </header>
 
     <div class="main-container">
         <!-- 预览区 -->
         <div class="preview-area" id="drop-zone">
-            <div class="empty-tip" id="empty-tip">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                <span>拖拽或点击上传单图</span>
+            <div id="inner-drop-zone">
+                <div class="dz-icon">📷</div>
+                <div class="dz-title">拖入照片 或 点此上传</div>
+                <div class="dz-sub">导入图像进行专业网格或手绘切分</div>
+                <div class="dz-chip">PNG · JPG · WebP</div>
             </div>
             <canvas id="canvas"></canvas>
         </div>
@@ -413,10 +444,11 @@
         // === 图片加载 ===
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById("drop-zone");
-        
+        dropZone.addEventListener("click", e => { if(!targetImg && (e.target === dropZone || e.target.closest('#inner-drop-zone'))) fileInput.click(); });
+        dropZone.addEventListener("dblclick", e => { if(targetImg && e.target === dropZone) fileInput.click(); });
         fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
-        dropZone.addEventListener("dragover", e => e.preventDefault());
-        dropZone.addEventListener("drop", e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
+        window.addEventListener("dragover", e => e.preventDefault());
+        window.addEventListener("drop", e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
 
         let freePolygons = [];
         let isDrawingLine = false;
@@ -441,7 +473,7 @@
                 img.onload = () => {
                     targetImg = img;
                     initFreePolygons();
-                    document.getElementById("empty-tip").style.display = "none";
+                    document.getElementById("inner-drop-zone").style.display = "none";
                     hideLoad();
                     triggerRender();
                 };
@@ -726,5 +758,69 @@
         });
 
     </script>
+<!-- Modern Toast UI 注入 -->
+<style>
+#modern-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(22, 26, 36, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#modern-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.drag-active {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.3) inset !important;
+    background: rgba(99, 102, 241, 0.08) !important;
+}
+</style>
+<div id="modern-toast"></div>
+<script>
+window.showToast = function(msg, type="info") {
+    const toast = document.getElementById("modern-toast");
+    const icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : '✨');
+    toast.innerHTML = `${icon} <span style="margin-left:4px;"></span>`;
+    toast.classList.add("show");
+    if(window._toastTimer) clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove("show"), 3000);
+};
+
+// 重写原生 alert 以呈现无阻滞体验
+window.alert = function(msg) {
+    showToast(msg, 'error');
+};
+
+// 全局响应拖放边框高亮
+document.addEventListener("DOMContentLoaded", () => {
+    const dropZones = document.querySelectorAll(".preview-area, .canvas-container-wrap, #drop-zone");
+    dropZones.forEach(zone => {
+        window.addEventListener("dragenter", (e) => { e.preventDefault(); zone.classList.add("drag-active"); });
+        window.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-active"); });
+        window.addEventListener("dragleave", (e) => { 
+            if (e.clientX === 0 || e.clientY === 0) zone.classList.remove("drag-active");
+        });
+        window.addEventListener("drop", (e) => { zone.classList.remove("drag-active"); });
+    });
+});
+</script>
+<!-- 注入结束 -->
 </body>
 </html>
