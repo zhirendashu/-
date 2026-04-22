@@ -33,7 +33,7 @@
 
         .preview-area { flex: 1; background: repeating-conic-gradient(rgba(255,255,255,.028) 0% 25%, transparent 0% 50%) 0 0/28px 28px; border-radius: var(--radius); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: all 0.3s; box-shadow: inset 0 20px 140px rgba(0,0,0,0.7); }
         .preview-area.drag-active { background: rgba(129, 140, 248, 0.05); }
-        #inner-drop-zone { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; width:440px; height:280px; max-width:88vw; border-radius:24px; border:2px dashed rgba(129,140,248,.35); background:rgba(129,140,248,.04); transition:0.3s; z-index:5; pointer-events:none; }
+        #inner-drop-zone { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; width:440px; height:280px; max-width:88vw; border-radius:24px; border:2px dashed rgba(129,140,248,.35); background:rgba(129,140,248,.04); transition:0.3s; z-index:5; /* 未载入图片时可交互，JS载入后隐藏 */ }
         .preview-area:hover #inner-drop-zone { border-color:var(--accent-primary); background:rgba(129,140,248,.1); }
         .dz-icon { font-size:2.8rem; line-height:1; }
         .dz-title { font-size:1.05rem; font-weight:700; color:#fff; }
