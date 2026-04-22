@@ -861,7 +861,8 @@
         function updateH(l, t, w, h, r) {
             const el = document.getElementById('handle');
             if(!el) return;
-            el.style.left = l+'%'; el.style.top = t+(t===50?'':'%'); 
+            // 所有 top 值统一带 % 单位（原逻辑 t===50 时不带单位会导致斜切模式手柄位置错误）
+            el.style.left = l+'%'; el.style.top = t+'%'; 
             el.style.width = w; el.style.height = h;
             el.style.transform = r ? `translate(-50%, -50%) rotate(${r}deg)` : 'none';
         }
