@@ -137,7 +137,8 @@
         width: 440px; height: 280px; max-width: 88vw;
         border-radius: 24px; border: 2px dashed rgba(91, 141, 238, .35);
         background: rgba(91, 141, 238, .04); transition: 0.3s;
-        z-index: 5; pointer-events: none;
+        z-index: 5;
+        /* 未载入图片时可交互（触发点击上传），载入后由JS设为pointer-events:none */
       }
       #main-preview-box:hover #inner-drop-zone { border-color: var(--accent); background: rgba(91, 141, 238, .1); }
       .dz-icon { font-size: 2.8rem; line-height: 1; }
@@ -149,11 +150,12 @@
         border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, .03);
       }
       #main-canvas {
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
+        /* Canvas 物理尺寸由 JS 的 .width/.height 属性控制 */
+        /* CSS 负责显示尺寸：width:100% 横向铺满，height:auto 按 aspect-ratio 等比适配 */
+        /* 注意：object-fit 对 canvas 无效，用 aspect-ratio 配合 height:auto 实现等比 */
+        width: 100%;
         height: auto;
-        object-fit: contain;
+        max-height: 100%;
         display: none;
       }
 
@@ -453,8 +455,7 @@
       }
       .grid-card img {
         width: 100%;
-        aspect-ratio: 16/9;
-        object-fit: cover;
+        height: auto;     /* 高度由图片真实比例决定，不强制 16:9 */
         display: block;
         cursor: pointer;
         border-bottom: 1px solid var(--border);
@@ -957,7 +958,7 @@
       // ==================== DOM元素 ====================
       const canvasDom = document.getElementById("main-canvas");
       const ctx = canvasDom.getContext("2d");
-      const placeholder = document.getElementById("preview-placeholder");
+      const placeholder = document.getElementById("inner-drop-zone");
       const previewInfo = document.getElementById("preview-info");
       const grid = document.getElementById("preview-grid");
 
@@ -1189,6 +1190,11 @@
         handleFiles([...e.dataTransfer.files]);
       });
       dropZone.addEventListener("click", () => fileInput.click());
+      // 点击主预览区（含占位提示层）也可触发文件上传
+      document.getElementById("main-preview-box").addEventListener("click", (e) => {
+        // 仅在未载入图片时（占位提示可见时）触发，或点击 Canvas 时不拦截
+        if (!imageList.length) fileInput.click();
+      });
       fileInput.addEventListener("change", (e) => {
         handleFiles([...e.target.files]);
         e.target.value = "";
@@ -1507,12 +1513,20 @@
       function updateMainPreview() {
         if (!imageList.length) {
           canvasDom.style.display = "none";
-          placeholder.style.display = "block";
+          // 显示占位提示区，恢复可点击状态
+          if (placeholder) {
+            placeholder.style.display = "flex";
+            placeholder.style.pointerEvents = "auto";
+          }
           previewInfo.textContent = "当前未载入图片";
           return;
         }
         canvasDom.style.display = "block";
-        placeholder.style.display = "none";
+        // 隐藏占位提示区，并禁用其事件（避免遮挡 Canvas 操作）
+        if (placeholder) {
+          placeholder.style.display = "none";
+          placeholder.style.pointerEvents = "none";
+        }
 
         if (layoutMode === "long") {
            // 长图模式下，将所有列表中的图片从上到下绘制在一张大画布上
@@ -1544,6 +1558,11 @@
 
            canvasDom.width = longCvs.width;
            canvasDom.height = longCvs.height;
+           // 通过 aspect-ratio 告知浏览器画布比例，配合 CSS object-fit:contain 自适应缩放
+           canvasDom.style.aspectRatio = `${longCvs.width} / ${longCvs.height}`;
+           // 移除可能残留的内联 width/height 样式
+           canvasDom.style.width = "";
+           canvasDom.style.height = "";
            ctx.clearRect(0, 0, canvasDom.width, canvasDom.height);
            ctx.drawImage(longCvs, 0, 0);
 
@@ -1553,6 +1572,11 @@
 
             canvasDom.width = item.finalCanvas.width;
             canvasDom.height = item.finalCanvas.height;
+            // 通过 aspect-ratio 告知浏览器画布比例，配合 CSS object-fit:contain 自适应缩放
+            canvasDom.style.aspectRatio = `${item.finalCanvas.width} / ${item.finalCanvas.height}`;
+            // 移除可能残留的内联 width/height 样式（防止遮盖 CSS 布局）
+            canvasDom.style.width = "";
+            canvasDom.style.height = "";
             ctx.clearRect(0, 0, canvasDom.width, canvasDom.height);
             ctx.drawImage(item.finalCanvas, 0, 0);
         }
@@ -1572,10 +1596,12 @@
 
         imageList.forEach((item, index) => {
           const cView = document.createElement("canvas");
-          // 将高清晰画布缩放到预览图以减少内存 DOM
-          cView.width = 320;
-          cView.height = 180;
-          cView.getContext("2d").drawImage(item.finalCanvas, 0, 0, 320, 180);
+          // 缩略图尺寸和 finalCanvas 比例同步，不强制 16:9
+          const thumbW = 320;
+          const thumbH = Math.round(thumbW * item.finalCanvas.height / item.finalCanvas.width);
+          cView.width = thumbW;
+          cView.height = thumbH;
+          cView.getContext("2d").drawImage(item.finalCanvas, 0, 0, thumbW, thumbH);
 
           const srcDataUrl = cView.toDataURL("image/jpeg", 0.6);
 

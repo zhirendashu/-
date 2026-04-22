@@ -115,7 +115,8 @@
             width: 440px; height: 280px; max-width: 88vw;
             border-radius: 24px; border: 2px dashed rgba(99, 102, 241, .35);
             background: rgba(99, 102, 241, .04); transition: 0.3s;
-            z-index: 5; pointer-events: none;
+            z-index: 5;
+            /* 未载入图片时可交互，载入后由JS设为pointer-events:none */
         }
         .preview-area:hover #inner-drop-zone { border-color: var(--accent-primary); background: rgba(99, 102, 241, .1); }
         .dz-icon { font-size: 2.8rem; line-height: 1; }
@@ -474,6 +475,8 @@
         const loading = document.getElementById("loading");
         const loadText = document.getElementById("load-text");
         
+        let sortableInstance = null; // 保持对 Sortable 实例的引用，避免内存泄漏
+
         let sourceImages = []; // { id, img, file, sx, sy, scale, bgRemovedImg }
         let currentMode = "grid";
         let isDragging = false;
@@ -719,8 +722,12 @@
                 q.appendChild(div);
             });
 
-            // 拖拽排序
-            Sortable.create(q, {
+            // 销毁旧的 Sortable 实例，防止内存泄漏
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+            sortableInstance = Sortable.create(q, {
                 animation: 150,
                 onEnd: evt => {
                     const movedItem = sourceImages.splice(evt.oldIndex, 1)[0];
@@ -730,8 +737,13 @@
                 }
             });
 
-            document.getElementById("inner-drop-zone").style.display = sourceImages.length > 0 ? "none" : "flex";
-            if(sourceImages.length === 0) {
+            const dropHint = document.getElementById("inner-drop-zone");
+            if (sourceImages.length > 0) {
+                dropHint.style.display = "none";
+                dropHint.style.pointerEvents = "none";
+            } else {
+                dropHint.style.display = "flex";
+                dropHint.style.pointerEvents = "auto"; // 无图片时允许点击上传
                 cvs.width = 0; cvs.height = 0;
                 finalCanvasCache = null;
             }

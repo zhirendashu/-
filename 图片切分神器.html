@@ -120,7 +120,8 @@
             width: 440px; height: 280px; max-width: 88vw;
             border-radius: 24px; border: 2px dashed rgba(99, 102, 241, .35);
             background: rgba(99, 102, 241, .04); transition: 0.3s;
-            z-index: 5; pointer-events: none;
+            z-index: 5;
+            /* 未载入图片时可交互，载入后由JS隐藏 */
         }
         .preview-area:hover #inner-drop-zone { border-color: var(--accent-primary); background: rgba(99, 102, 241, .1); }
         .dz-icon { font-size: 2.8rem; line-height: 1; }
@@ -641,8 +642,11 @@
                 }
             }
             
-            ctx.setLineDash([Math.max(10, W * 0.01), Math.max(10, W * 0.01)]);
-            ctx.stroke();
+            // 网格模式的辅助线一次性进行 stroke（自由模式内部已单独处理）
+            if (currentMode === "grid") {
+                ctx.setLineDash([Math.max(10, W * 0.01), Math.max(10, W * 0.01)]);
+                ctx.stroke();
+            }
             ctx.restore();
             
             // 增加半透明遮罩层提升辅助线对比度
